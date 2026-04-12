@@ -126,22 +126,15 @@ nav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script>
-// Inject environment variables
 window.ENV = window.ENV || {};
-
-// API Configuration - Update this to your backend URL
-// For Vercel deployment: Set via VERCEL_URL or manually
-window.ENV.API_BASE_URL = window.ENV.API_BASE_URL || 
-  (typeof import.meta !== 'undefined' ? import.meta.env.VITE_API_URL : null) ||
-  'https://eduforge-ai-backend.railway.app'; // Your deployed backend URL
 </script>
 <script>
 const {useState,useEffect,useRef,useCallback,useMemo}=React;
 
 // ── API CONFIG ────────────────────────────────────────────────────
-// Use relative URLs - Vercel rewrites /api/* to backend
-const API_BASE = '';  // Use relative URLs - Vercel rewrites to backend
-const WS_URL = (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + '/ws';
+// Backend URL - Relative path for Vercel rewrites
+const API_BASE = '';
+const WS_URL = '';
 
 async function apiFetch(path, body) {
   const res = await fetch(API_BASE + path, {
