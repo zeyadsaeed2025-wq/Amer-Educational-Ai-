@@ -9,8 +9,8 @@ python-dotenv>=1.0.0
 sqlalchemy>=2.0.0
 psycopg2-binary>=2.9.0
 
-# Optional: Supabase
-# supabase>=2.0.0
+# Supabase
+supabase>=2.0.0
 
 # Optional: Redis
 # redis>=5.0.0

@@ -1,18 +1,7 @@
 {
   "rewrites": [
-    {
-      "source": "/api/:path*",
-      "destination": "https://eduforge-api.up.railway.app/api/:path*"
-    }
-  ],
-  "headers": [
-    {
-      "source": "/api/:path*",
-      "headers": [
-        {"key": "Access-Control-Allow-Origin", "value": "*"},
-        {"key": "Access-Control-Allow-Methods", "value": "GET, POST, PUT, DELETE, OPTIONS"},
-        {"key": "Access-Control-Allow-Headers", "value": "Content-Type"}
-      ]
-    }
+    {"source": "/api/(.*)", "destination": "https://eduforge-ai-swart.vercel.app/api/$1"},
+    {"source": "/health", "destination": "https://eduforge-ai-swart.vercel.app/health"},
+    {"source": "/ws", "destination": "https://eduforge-ai-swart.vercel.app/ws"}
   ]
 }

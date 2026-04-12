@@ -11,10 +11,12 @@ logger = logging.getLogger(__name__)
 # Check database configuration
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
-DATABASE_URL = os.getenv("DATABASE_URL")  # Railway PostgreSQL
+DATABASE_URL = os.getenv("DATABASE_URL")
 
+# Skip DB in production (Vercel) unless Supabase configured
 USE_SUPABASE = bool(SUPABASE_URL and SUPABASE_KEY)
 USE_POSTGRES = bool(DATABASE_URL and not USE_SUPABASE)
+IS_VERCEL = os.getenv("VERCEL") is not None
 
 
 class DatabaseManager:
@@ -26,7 +28,10 @@ class DatabaseManager:
         self._engine = None
         self._SessionLocal = None
         
-        if USE_POSTGRES:
+        if IS_VERCEL and not USE_SUPABASE:
+            # Skip DB on Vercel without Supabase
+            logger.info("Using no DB (Vercel prod mode)")
+        elif USE_POSTGRES:
             logger.info("Using Railway PostgreSQL")
             self._init_postgres()
         elif USE_SUPABASE:
@@ -42,15 +47,20 @@ class DatabaseManager:
             from sqlalchemy import create_engine
             from sqlalchemy.orm import sessionmaker
             from sqlalchemy.ext.declarative import declarative_base
+            import os
+            
+            # Use in-memory for production (Vercel)
+            is_prod = os.getenv("VERCEL") == "1" or os.getenv("AMVERCEL")
+            db_path = ":memory:" if is_prod else "sqlite:///./eduforge.db"
             
             self._engine = create_engine(
-                "sqlite:///./eduforge.db",
-                connect_args={"check_same_thread": False}
+                db_path,
+                connect_args={"check_same_thread": False} if not is_prod else {}
             )
             self._SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=self._engine)
             self._Base = declarative_base()
             self._create_tables_sqlite()
-            logger.info("SQLite initialized")
+            logger.info(f"SQLite initialized (memory={is_prod})")
         except Exception as e:
             logger.error(f"SQLite init error: {e}")
             raise

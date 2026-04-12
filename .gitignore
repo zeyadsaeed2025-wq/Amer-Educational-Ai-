@@ -73,3 +73,5 @@ build/
 *.bak
 *.tmp
 .cache/
+
+.vercel

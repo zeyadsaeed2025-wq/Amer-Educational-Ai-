@@ -1037,9 +1037,14 @@ class AIService:
                 logger.info(f"Cache hit: {cache_key}")
                 return cached
         
-        # Generate content
+        # Generate content - use OpenAI if available
         logger.info(f"Generating: {title} for {category_value}")
-        content = ContentGenerator.generate(title, category)
+        
+        if not self.use_mock and settings.openai_api_key:
+            content = await self._generate_with_openai(title, category_value)
+        else:
+            content = ContentGenerator.generate(title, category)
+        
         logger.info(f"Generated content with {len(content['standard']['intro'])} chars")
         
         # Cache result
@@ -1047,6 +1052,87 @@ class AIService:
             self._cache.set(cache_key, content, ttl=3600)
         
         return content
+    
+    async def _generate_with_openai(self, title: str, category: str) -> dict:
+        """Generate intelligent content using OpenAI API with better prompts."""
+        try:
+            import httpx
+            
+            category_labels = {
+                "standard": "طالب عادي في المدرسة",
+                "autism": "طالب مع اضطراب طيف التوحد",
+                "adhd": "طالب مع اضطراب نقص الانتباه وفرط الحركة",
+                "dyslexia": "طالب مع عسر القراءة",
+                "visual": "طالب مع إعاقة بصرية",
+                "hearing": "طالب مع إعاقة سمعية",
+            }
+            category_label = category_labels.get(category, "طالب عادي")
+            
+            category_styles = {
+                "standard": "استخدم لغة تعليمية غنية ومناسبة للمستوى المتوسط",
+                "autism": "استخدم لغة بسيطة واضحة، كرر المعلومات، قسّم الخطوات، استخدم التصنيفات المرئية",
+                "adhd": "اجعل المحتوى قصيراً ومباشراً، استخدم التفاعل، قسّم لمقاطع قصيرة",
+                "dyslexia": "استخدم فقرات قصيرة، خط كبير، مسافات واسعة، تجنب النصوص الكثيفة",
+                "visual": "قدم المحتوى نصياً بدون رسوم، اكتب أوصافاً مفصلة للصور والرسوم",
+                "hearing": "قدم كل شيء مكتوباً بدون محتوى صوتي، اكتب التفسيرات بدلاً من الشرح الشفوي",
+            }
+            style = category_styles.get(category, category_styles["standard"])
+            
+            prompt = f"""أنت معلم عربي متخصص في التعليم والتدريب. أنشئ lesson تعليمي متميز لدرس "{title}" مخصص لـ {category_label}.
+
+المتطلبات:
+1. المحتوى يجب أن يكون أصلياً ومتجدداً وليس من نماذج سابقة
+2. اكتب باللغة العربية الفصحى الحديثة
+3. {style}
+4. يجب أن يكون المحتوى متوافقاً مع المنهج المصري
+
+الهيكل المطلوب:
+- intro: مقدمة جذابة (3-4 جمل) تثير اهتمام الطالب وربط بالواقع
+- body: شرح تفصيلي من 8-12 فقرة مع أمثلة من الحياة اليومية
+- questions: 5 أسئلة تقييمية متنوعة (اختيار من متعدد + صح أو خطأ + إجابة قصيرة)
+- activities: 4 أنشطة تعليمية عملية
+- tips: 5 نصائح للتعلم الفعال
+
+ملاحظات مهمة:
+- لا تكرر نفس المحتوى بين النسخ (standard, simplified, accessibility)
+- اجعل كل نسخة فريدة ومميزة
+- استخدم أمثلة من الحياة اليومية المصرية
+- التزم بالتنسيق JSON المطلوب"""
+
+            async with httpx.AsyncClient(timeout=90.0) as client:
+                response = await client.post(
+                    "https://api.openai.com/v1/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {settings.openai_api_key}",
+                        "Content-Type": "application/json",
+                    },
+                    json={
+                        "model": settings.openai_model,
+                        "messages": [
+                            {"role": "system", "content": "أنت معلم عربي خبير في التعليم. أنشئ محتوى تعليمي أصلي ومتميز."},
+                            {"role": "user", "content": prompt}
+                        ],
+                        "temperature": 0.8,
+                        "max_tokens": 4000,
+                    },
+                )
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    content_text = data["choices"][0]["message"]["content"]
+                    import json
+                    try:
+                        content = json.loads(content_text)
+                        if "standard" in content:
+                            return content
+                    except:
+                        pass
+            
+            logger.warning("OpenAI generation failed, falling back to template")
+        except Exception as e:
+            logger.error(f"OpenAI error: {e}")
+        
+        return ContentGenerator.generate(title, LearnerCategory(category))
     
     async def generate_improvements(self, text: str) -> list:
         """Generate improvement suggestions."""
@@ -1067,6 +1153,260 @@ class AIService:
             suggestions.append("قسّم إلى خطوات واضحة")
         
         return suggestions[:6]
+
+    async def generate_curriculum(self, title: str, category: str, num_units: int = 3, lessons_per_unit: int = 4) -> dict:
+        """Generate a complete curriculum with units and lessons."""
+        if not self.use_mock and settings.openai_api_key:
+            try:
+                import httpx
+                
+                category_labels = {
+                    "standard": "طلاب المدارس",
+                    "autism": "طلاب مع اضطراب التوحد",
+                    "adhd": "طلاب مع ADHD",
+                    "dyslexia": "طلاب مع عسر القراءة",
+                    "visual": "طلاب مع إعاقة بصرية",
+                    "hearing": "طلاب مع إعاقة سمعية",
+                }
+                category_label = category_labels.get(category, "طلاب المدارس")
+                
+                prompt = f"""أنشئ منهج تعليمي كامل باللغة العربية لـ {title} لـ {category_label}.
+
+المتطلبات:
+- {num_units} وحدات تعليمية
+- {lessons_per_unit} دروس في كل وحدة
+- كل درس له: عنوان، أهداف، محتوى، أسئلة، أنشطة
+
+الهيكل المطلوب JSON:
+{{
+  "course_title": "...",
+  "objectives": ["...", "..."],
+  "units": [
+    {{
+      "unit_title": "...",
+      "unit_objectives": ["...", "..."],
+      "lessons": [
+        {{
+          "title": "...",
+          "objectives": ["...", "..."],
+          "content": "...",
+          "duration_minutes": 30,
+          "questions": ["...", "..."],
+          "activities": ["...", "..."]
+        }}
+      ],
+      "assessment": "..."
+    }}
+  ],
+  "total_lessons": {num_units * lessons_per_unit},
+  "estimated_hours": {num_units * lessons_per_unit * 0.5}
+}}
+
+أرجع JSON فقط بدون نص إضافي."""
+
+                async with httpx.AsyncClient(timeout=120.0) as client:
+                    response = await client.post(
+                        "https://api.openai.com/v1/chat/completions",
+                        headers={
+                            "Authorization": f"Bearer {settings.openai_api_key}",
+                            "Content-Type": "application/json",
+                        },
+                        json={
+                            "model": settings.openai_model,
+                            "messages": [
+                                {"role": "system", "content": "أنت خبير في تصميم المناهج الدراسية."},
+                                {"role": "user", "content": prompt}
+                            ],
+                            "temperature": 0.8,
+                            "max_tokens": 4000,
+                        },
+                    )
+                    
+                    if response.status_code == 200:
+                        data = response.json()
+                        content_text = data["choices"][0]["message"]["content"]
+                        import json
+                        try:
+                            curriculum = json.loads(content_text)
+                            return curriculum
+                        except:
+                            pass
+            
+            except Exception as e:
+                logger.error(f"Curriculum AI error: {e}")
+        
+        # Fallback structure
+        return self._generate_curriculum_fallback(title, category, num_units, lessons_per_unit)
+
+    def _generate_curriculum_fallback(self, title: str, category: str, num_units: int, lessons_per_unit: int) -> dict:
+        """Generate curriculum structure as fallback."""
+        units = []
+        for i in range(num_units):
+            lessons = []
+            for j in range(lessons_per_unit):
+                lessons.append({
+                    "title": f"الدرس {j+1}: {title} - مرحلة {j+1}",
+                    "objectives": [f"فهم أساسيات {title}", f"تطبيق مفاهيم {title}"],
+                    "content": f"محتوى الدرس {j+1} حول {title}",
+                    "duration_minutes": 30,
+                    "questions": ["سؤال 1؟", "سؤال 2؟", "سؤال 3؟"],
+                    "activities": ["نشاط عملي 1", "نشاط جماعي 2"]
+                })
+            units.append({
+                "unit_title": f"الوحدة {i+1}: أساسات {title}",
+                "unit_objectives": [f"تعلم أساسيات {title}"],
+                "lessons": lessons,
+                "assessment": f"تقييم الوحدة {i+1}"
+            })
+        
+        return {
+            "course_title": f"منهج {title}",
+            "objectives": [f"تعلم {title}", f"تطبيق {title}"],
+            "units": units,
+            "total_lessons": num_units * lessons_per_unit,
+            "estimated_hours": num_units * lessons_per_unit * 0.5
+        }
+
+    async def live_assist(self, text: str, context: str = "general", category: str = "standard") -> dict:
+        """Get AI assistance while editing content."""
+        if not self.use_mock and settings.openai_api_key:
+            try:
+                import httpx
+                
+                prompts = {
+                    "general": "حسن هذا النص التعليمي",
+                    "simplify": "بسّط هذا النص لطلاب",
+                    "expand": "وسّع هذا النص بمزيد من التفاصيل",
+                    "quiz": "حوّل هذا المحتوى لأسئلة تقييمية"
+                }
+                instruction = prompts.get(context, prompts["general"])
+                
+                prompt = f"""{instruction}:
+
+{text}
+
+أرجع JSON فقط:
+{{
+  "suggestions": ["...", "..."],
+  "improved_text": "النص المحسّن...",
+  "improvements": ["...", "..."]
+}}"""
+
+                async with httpx.AsyncClient(timeout=60.0) as client:
+                    response = await client.post(
+                        "https://api.openai.com/v1/chat/completions",
+                        headers={
+                            "Authorization": f"Bearer {settings.openai_api_key}",
+                            "Content-Type": "application/json",
+                        },
+                        json={
+                            "model": settings.openai_model,
+                            "messages": [
+                                {"role": "system", "content": "أنت مساعد تعليمي ذكي."},
+                                {"role": "user", "content": prompt}
+                            ],
+                            "temperature": 0.7,
+                            "max_tokens": 2000,
+                        },
+                    )
+                    
+                    if response.status_code == 200:
+                        data = response.json()
+                        content_text = data["choices"][0]["message"]["content"]
+                        import json
+                        try:
+                            result = json.loads(content_text)
+                            return result
+                        except:
+                            pass
+            
+            except Exception as e:
+                logger.error(f"Live assist error: {e}")
+        
+        return {"suggestions": ["أضف أمثلة عملية"], "improved_text": text, "improvements": ["قسّم النص لفقرات"]}
+
+    async def smart_analyze(self, text: str, category: str = "standard") -> dict:
+        """AI-powered content analysis with smart alerts."""
+        if not self.use_mock and settings.openai_api_key:
+            try:
+                import httpx
+                
+                word_count = len(text.split())
+                char_count = len(text)
+                
+                prompt = f"""حلّل هذا النص التعليمي واحسب:
+
+- درجة القراءة (0-100)
+- درجة التفاعل (0-100)
+- التنبيهات الذكية
+- الاقتراحات
+
+النص: {text[:500]}...
+
+أرجع JSON فقط:
+{{
+  "score": 85,
+  "engagement_level": "high/medium/low",
+  "complexity_level": "high/medium/low",
+  "alerts": [{{"type": "warn", "msg": "..."}}],
+  "suggestions": ["...", "..."],
+  "readability_score": 80,
+  "interactivity_score": 70
+}}"""
+
+                async with httpx.AsyncClient(timeout=60.0) as client:
+                    response = await client.post(
+                        "https://api.openai.com/v1/chat/completions",
+                        headers={
+                            "Authorization": f"Bearer {settings.openai_api_key}",
+                            "Content-Type": "application/json",
+                        },
+                        json={
+                            "model": settings.openai_model,
+                            "messages": [
+                                {"role": "system", "content": "أنت محلل تعليمي ذكي."},
+                                {"role": "user", "content": prompt}
+                            ],
+                            "temperature": 0.5,
+                            "max_tokens": 1000,
+                        },
+                    )
+                    
+                    if response.status_code == 200:
+                        data = response.json()
+                        content_text = data["choices"][0]["message"]["content"]
+                        import json
+                        try:
+                            result = json.loads(content_text)
+                            return result
+                        except:
+                            pass
+            
+            except Exception as e:
+                logger.error(f"Smart analyze error: {e}")
+        
+        # Simple fallback
+        word_count = len(text.split())
+        score = min(100, word_count // 2)
+        alerts = []
+        suggestions = []
+        
+        if word_count < 50:
+            alerts.append({"type": "warn", "msg": "المحتوى قصير جداً"})
+            suggestions.append("أضف المزيد من التفاصيل")
+        if "؟" not in text:
+            alerts.append({"type": "info", "msg": "أضف أسئلة تفاعلية"})
+            suggestions.append("أضف أسئلة تقييمية")
+        
+        return {
+            "score": score,
+            "engagement_level": "medium" if word_count > 100 else "low",
+            "complexity_level": "medium",
+            "alerts": alerts,
+            "suggestions": suggestions,
+            "readability_score": score,
+            "interactivity_score": max(0, score - 20)
+        }
 
 
 ai_service = AIService()

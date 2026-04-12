@@ -5,14 +5,15 @@ from datetime import datetime
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 
-from db.database import db_manager
 from db.schemas import HealthResponse
 from core.config import get_settings
 from api.routes.generate import router as generate_router
 from api.routes.analyze import router as analyze_router
 from api.routes.suggest import router as suggest_router
 from api.routes.lessons import router as lessons_router
+from api.routes.curriculum import router as curriculum_router
 from api.websocket import websocket_endpoint
 
 logging.basicConfig(level=logging.INFO)
@@ -22,7 +23,6 @@ settings = get_settings()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Lifespan context manager for startup and shutdown."""
     db_type = "PostgreSQL" if os.getenv("DATABASE_URL") else ("Supabase" if os.getenv("SUPABASE_URL") else "SQLite")
     cache_type = "Redis" if os.getenv("REDIS_URL") else "None"
     logger.info(f"Starting {settings.app_name}...")
@@ -39,43 +39,21 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS Middleware - Allow Vercel and localhost
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        "https://amer-educational-ai.vercel.app",
-        "https://*.vercel.app",
-        "http://localhost:3000",
-        "http://localhost:5173",
-        "http://localhost:8000",
-        "*",
-    ],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
-# Include routers
-app.include_router(generate_router)
-app.include_router(analyze_router)
-app.include_router(suggest_router)
-app.include_router(lessons_router)
-
-
-@app.get("/", response_model=HealthResponse)
+# Root - serve frontend or health info
+@app.get("/")
 async def root():
-    """Health check endpoint."""
-    return HealthResponse(
-        status="ok",
-        service=settings.app_name,
-        version="1.0.0",
-        timestamp=datetime.now().isoformat(),
-    )
+    """Serve frontend HTML or API info."""
+    try:
+        return FileResponse("index.html", media_type="text/html")
+    except:
+        return {"status": "ok", "service": "EduForge AI", "version": "1.0.0"}
 
 
+# Health check endpoint
 @app.get("/health", response_model=HealthResponse)
 async def health_check():
-    """Detailed health check."""
+    """Health check endpoint."""
     return HealthResponse(
         status="healthy",
         service=settings.app_name,
@@ -84,17 +62,29 @@ async def health_check():
     )
 
 
+# CORS - Allow all origins
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Include API routers
+app.include_router(generate_router)
+app.include_router(analyze_router)
+app.include_router(suggest_router)
+app.include_router(lessons_router)
+app.include_router(curriculum_router)
+
+
+# WebSocket for real-time (local only)
 @app.websocket("/ws")
 async def ws_endpoint(websocket):
-    """WebSocket endpoint for real-time analysis."""
     await websocket_endpoint(websocket)
 
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(
-        "main:app",
-        host=settings.host,
-        port=settings.port,
-        reload=settings.debug,
-    )
+    uvicorn.run("main:app", host=settings.host, port=settings.port, reload=settings.debug)

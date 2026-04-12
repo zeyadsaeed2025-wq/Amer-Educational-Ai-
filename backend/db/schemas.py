@@ -25,6 +25,8 @@ class ContentResponse(BaseModel):
     simplified: ContentVersion
     accessibility: ContentVersion
     ui_hints: dict = Field(default_factory=dict)
+    user_id: Optional[str] = None
+    version: int = 1
 
 
 class AnalysisRequest(BaseModel):
@@ -59,3 +61,40 @@ class HealthResponse(BaseModel):
     service: str
     version: str
     timestamp: Optional[str] = None
+
+
+# User & Lesson schemas
+class UserProfile(BaseModel):
+    id: str
+    email: Optional[str] = None
+    full_name: Optional[str] = None
+    created_at: Optional[str] = None
+
+
+class Lesson(BaseModel):
+    id: str
+    user_id: Optional[str] = None
+    title: str
+    category: str
+    version: int = 1
+    is_published: bool = False
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
+
+
+class LessonDetail(Lesson):
+    content_standard: Optional[str] = None
+    content_simplified: Optional[str] = None
+    content_accessibility: Optional[str] = None
+    ui_hints: Optional[str] = None
+
+
+class LessonVersion(BaseModel):
+    id: str
+    lesson_id: str
+    version: int
+    content_standard: Optional[str] = None
+    content_simplified: Optional[str] = None
+    content_accessibility: Optional[str] = None
+    change_summary: Optional[str] = None
+    created_at: Optional[str] = None

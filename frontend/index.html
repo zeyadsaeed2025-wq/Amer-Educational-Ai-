@@ -3,6 +3,14 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="description" content="EduForge AI - منصة تعليمية ذكية توليد محتوى تعليمي بالذكاء الاصطناعي لجميع فئات المتعلمين"/>
+<meta name="keywords" content="تعليم,ذكاء اصطناعي,مناهج,درس,تعلم,إعاقات,توحد,ADHD"/>
+<meta name="author" content="EduForge AI"/>
+<meta name="theme-color" content="#0a6b5e"/>
+<meta property="og:title" content="EduForge AI - منصة تعليمية ذكية"/>
+<meta property="og:description" content="توليد محتوى تعليمي بالذكاء الاصطناعي"/>
+<meta property="og:type" content="website"/>
+<link rel="canonical" href="https://eduforge-ai-swart.vercel.app"/>
 <title>EduForge AI — منصة تعليمية ذكية شاملة</title>
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&family=Fraunces:wght@600&display=swap" rel="stylesheet"/>
 <style>
@@ -141,17 +149,45 @@ const WS_URL = window.location.protocol === 'https:'
   ? 'wss://' + window.location.host + '/ws' 
   : 'ws://localhost:8000/ws';
 
-async function apiFetch(path, body) {
-  const res = await fetch(API_BASE + path, {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail || `HTTP ${res.status}`);
+// Error handling with retry
+async function apiFetch(path, body, options = {}) {
+  const { retries = 2, timeout = 30000 } = options;
+  let lastError;
+  
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeout);
+      
+      const res = await fetch(API_BASE + path, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || `HTTP ${res.status}`);
+      }
+      return res.json();
+    } catch (err) {
+      lastError = err;
+      if (attempt < retries) {
+        await new Promise(r => setTimeout(r, 500 * (attempt + 1)));
+      }
+    }
   }
-  return res.json();
+  throw lastError;
+}
+
+// Page title manager
+function setPageTitle(title) {
+  document.title = title + ' — EduForge AI';
+  if (window.history) {
+    window.history.replaceState(null, title, window.location.pathname);
+  }
 }
 
 // Quality analysis - uses REST API with debounce (WebSocket fallback for local dev)
@@ -260,7 +296,18 @@ function SmartSidebar({quality,alerts,suggestions,content,lessonId}){
     if(!content||content.length<10)return;
     setAiLoading(true);setAiError(null);
     try{
-      const d=await apiFetch('/api/suggest-improvements',{text:content});
+      const d=await apiFetch('/api/live-assist',{text:content,context:'general'});
+      setAiSuggestions(d.suggestions||[]);
+    }catch(e){
+      setAiError('تعذّر الاتصال بالخادم');
+    }finally{setAiLoading(false);}
+  }
+  
+  async function fetchSmartAnalyze(){
+    if(!content||content.length<10)return;
+    setAiLoading(true);setAiError(null);
+    try{
+      const d=await apiFetch('/api/smart-analyze',{text:content});
       setAiSuggestions(d.suggestions||[]);
     }catch(e){
       setAiError('تعذّر الاتصال بالخادم');
@@ -290,6 +337,13 @@ function SmartSidebar({quality,alerts,suggestions,content,lessonId}){
           disabled:aiLoading||!content,
           title:'اقتراحات AI',
         },aiLoading?'⏳':'🤖 AI'),
+        React.createElement('button',{
+          className:'btn btn-pri btn-sm',
+          style:{padding:'3px 10px',fontSize:11},
+          onClick:fetchSmartAnalyze,
+          disabled:aiLoading||!content,
+          title:'تحليل ذكي',
+        },'📊'),
       ),
       aiError&&React.createElement('p',{style:{fontSize:12,color:'var(--text3)',marginBottom:6}},aiError),
       aiSuggestions.length>0
@@ -316,17 +370,20 @@ function HomePage({onStart}){
     React.createElement('div',{className:'hero'},
       React.createElement('div',{style:{display:'inline-flex',alignItems:'center',gap:8,background:'var(--pri-light)',color:'var(--pri)',borderRadius:100,padding:'4px 16px',fontSize:13,fontWeight:700,marginBottom:20}},'✨ منصة تعليمية ذكية وشاملة'),
       React.createElement('h1',null,'إنشاء محتوى تعليمي بالذكاء الاصطناعي لـ',React.createElement('em',null,' الجميع')),
-      React.createElement('p',null,'منصة EduForge AI تُمكّنك من توليد دروس ووحدات ومناهج كاملة مُخصَّصة لكل فئة من المتعلمين — من الطلاب العاديين حتى جميع أنواع الاحتياجات الخاصة.'),
+      React.createElement('p',null,'منصة EduForge AI تُمكّنك من توليد دروس ووحدات ومناهج كاملة مُخصَّصة لكل فئة من المتعلمين.'),
+      React.createElement('div',{style:{display:'flex',gap:12,justifyContent:'center',marginBottom:24}},
+        React.createElement('button',{className:'btn btn-pri',onClick:()=>onStart('standard')},'📚 درس واحد'),
+        React.createElement('button',{className:'btn btn-acc',onClick:()=>onStart('curriculum')},'📖 منهج كامل'),
+      ),
       React.createElement('div',{className:'cat-grid'},
         CATS.map(c=>React.createElement('div',{key:c.id,className:'cat-card',onClick:()=>onStart(c.id)},
           React.createElement('div',{className:'icon'},c.icon),
           React.createElement('div',{className:'lbl'},c.label),
         )),
       ),
-      React.createElement('button',{className:'btn btn-pri',onClick:()=>onStart('standard'),style:{fontSize:17,padding:'14px 36px'}},'🚀 ابدأ إنشاء المحتوى'),
     ),
     React.createElement('div',{style:{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:16,maxWidth:720,margin:'0 auto 40px',padding:'0 24px'}},
-      [{icon:'🧠',title:'ذكاء اصطناعي',desc:'توليد دروس كاملة تلقائياً'},{icon:'♿',title:'شامل للجميع',desc:'6 فئات من المتعلمين'},{icon:'⚡',title:'سريع ومرن',desc:'تعديل وتصدير فوري'}]
+      [{icon:'🧠',title:'ذكاء اصطناعي',desc:'توليد بالـ OpenAI'},{icon:'📚',title:'درس واحد',desc:'محتوى تعليمي سريع'},{icon:'📖',title:'منهج كامل',desc:'وحدات ودروس متعددة'}]
         .map(f=>React.createElement('div',{key:f.title,className:'card',style:{textAlign:'center'}},
           React.createElement('div',{style:{fontSize:32,marginBottom:8}},f.icon),
           React.createElement('div',{style:{fontWeight:800,marginBottom:4}},f.title),
@@ -420,7 +477,14 @@ function ContentDisplay({lesson,settings,onPreview}){
     w.document.write(`<html dir="rtl"><head><meta charset="UTF-8"><style>body{font-family:Tahoma,sans-serif;padding:40px;line-height:2;direction:rtl}h1{color:#0a6b5e}pre{white-space:pre-wrap;font-family:Tahoma}h3{margin-top:24px}</style></head><body>`);
     w.document.write(`<h1>${lesson.title}</h1><hr/><h2>المحتوى</h2><pre>${content}</pre>`);
     if(lesson[tab].questions.length){w.document.write('<h3>الأسئلة التقييمية</h3><ol>');lesson[tab].questions.forEach(q=>w.document.write(`<li>${q}</li>`));w.document.write('</ol>');}
+    if(lesson[tab].activities?.length){w.document.write('<h3>الأنشطة</h3><ul>');lesson[tab].activities.forEach(a=>w.document.write(`<li>${a}</li>`));w.document.write('</ul>');}
     w.document.write('</body></html>');w.document.close();w.print();
+  }
+  function exportText(){
+    const text=`# ${lesson.title}\n\n${content}\n\n# الأسئلة\n${lesson[tab].questions?.join('\n')}\n\n# الأنشطة\n${lesson[tab].activities?.join('\n')}`;
+    const blob=new Blob([text],{type:'text/plain;charset=utf-8'});
+    const u=URL.createObjectURL(blob);
+    const a=document.createElement('a');a.href=u;a.download=`${lesson.title}.txt`;a.click();URL.revokeObjectURL(u);
   }
   const tabs=[{id:'standard',l:'📄 قياسي'},{id:'simplified',l:'🟢 مبسّط'},{id:'accessibility',l:'♿ إمكانية وصول'}];
   return React.createElement('div',{className:'page-fade',style:{display:'flex',gap:20,alignItems:'flex-start'}},
@@ -431,8 +495,9 @@ function ContentDisplay({lesson,settings,onPreview}){
           React.createElement('span',{style:{fontSize:13,color:'var(--text3)'}},CATS.find(c=>c.id===lesson.category)?.icon+' '+CATS.find(c=>c.id===lesson.category)?.label),
         ),
         React.createElement('div',{style:{display:'flex',gap:8}},
-          React.createElement('button',{className:'btn btn-sec btn-sm',onClick:onPreview},'👁 معاينة'),
-          React.createElement('button',{className:'btn btn-acc btn-sm',onClick:exportPDF},'📥 تصدير PDF'),
+          React.createElement('button',{className:'btn btn-sec btn-sm',onClick:onPreview},'👁'),
+          React.createElement('button',{className:'btn btn-sec btn-sm',onClick:exportPDF},'📄 PDF'),
+          React.createElement('button',{className:'btn btn-sec btn-sm',onClick:exportText},'📝 TXT'),
         ),
       ),
       React.createElement('div',{className:'tabs',role:'tablist'},
@@ -494,11 +559,102 @@ function PreviewPage({lesson,settings,onBack}){
   );
 }
 
+function CurriculumPage({onBack}){
+  const [title,setTitle]=useState('');
+  const [cat,setCat]=useState('standard');
+  const [numUnits,setNumUnits]=useState(3);
+  const [lessonsPerUnit,setLessonsPerUnit]=useState(4);
+  const [loading,setLoading]=useState(false);
+  const [curriculum,setCurriculum]=useState(null);
+  const [error,setError]=useState(null);
+
+  async function handleGen(){
+    if(!title.trim())return;
+    setError(null);
+    setLoading(true);
+    try{
+      const d=await apiFetch('/api/curriculum/generate',{title:title.trim(),category:cat,num_units:numUnits,lessons_per_unit:lessonsPerUnit});
+      setCurriculum(d);
+    }catch(e){
+      setError(e.message||'فشل');
+    }finally{setLoading(false);}
+  }
+
+  if(loading)return React.createElement('div',{className:'loader'},
+    React.createElement('div',{className:'spinner'}),
+    React.createElement('p',{style:{fontWeight:700,color:'var(--pri)'}},'جارٍ إنشاء المنهج...'),
+  );
+
+  if(curriculum)return React.createElement('div',{className:'page-fade',style:{maxWidth:800,margin:'0 auto'}},
+    React.createElement('button',{className:'btn btn-sec',onClick:()=>setCurriculum(null)},'← إنشاء منهج آخر'),
+    React.createElement('h2',{style:{marginBottom:16}},curriculum.course_title),
+    React.createElement('p',{style:{color:'var(--text2)',marginBottom:24}},'وحدات: '+curriculum.units?.length+' | دروس: '+curriculum.total_lessons+' | ساعات: '+curriculum.estimated_hours),
+    curriculum.units?.map((u,i)=>React.createElement('div',{key:i,className:'card',style:{marginBottom:16}},
+      React.createElement('h3',{style:{color:'var(--pri)',marginBottom:12}},u.unit_title),
+      React.createElement('p',{style:{fontSize:13,color:'var(--text2)',marginBottom:12}},u.unit_objectives?.join(' • ')),
+      React.createElement('div',{style:{display:'flex',flexWrap:'wrap',gap:8}},
+        u.lessons?.map((l,j)=>React.createElement('span',{key:j,className:'act-tag'},l.title)),
+      ),
+    )),
+  );
+
+  return React.createElement('div',{className:'page-fade',style:{maxWidth:640,margin:'0 auto'}},
+    React.createElement('h2',{style:{fontSize:24,marginBottom:4},'📖 إنشاء منهج كامل'},
+    React.createElement('p',{style:{color:'var(--text2)',marginBottom:24}},'أنشئ منهج متكامل بوحدات ودروس متعددة'),
+    error&&React.createElement('div',{className:'alert-item alert-danger',style:{marginBottom:16}},error),
+    React.createElement('div',{className:'card'},
+      React.createElement('div',{className:'form-group'},
+        React.createElement('label',{className:'form-label'},'عنوان المنهج'),
+        React.createElement('input',{className:'form-input',placeholder:'مثال: الرياضيات للصف الأول',value:title,onChange:e=>setTitle(e.target.value)}),
+      ),
+      React.createElement('div',{className:'form-group'},
+        React.createElement('label',{className:'form-label'},'عدد الوحدات'),
+        React.createElement('input',{type:'number',className:'form-input',value:numUnits,onChange:e=>setNumUnits(+e.target.value),min:1,max:10}),
+      ),
+      React.createElement('div',{className:'form-group'},
+        React.createElement('label',{className:'form-label'},'دروس لكل وحدة'),
+        React.createElement('input',{type:'number',className:'form-input',value:lessonsPerUnit,onChange:e=>setLessonsPerUnit(+e.target.value),min:1,max:10}),
+      ),
+      React.createElement('div',{className:'form-group'},
+        React.createElement('label',{className:'form-label'},'الفئة'),
+        React.createElement('div',{className:'cat-select-grid'},
+          CATS.map(c=>React.createElement('div',{key:c.id,className:'cat-opt'+(cat===c.id?' sel':''),onClick:()=>setCat(c.id)},
+            React.createElement('div',{className:'ico'},c.icon),
+            React.createElement('div',{className:'nm'},c.label),
+          )),
+        ),
+      ),
+      React.createElement('button',{className:'btn btn-pri',style:{width:'100%'},onClick:handleGen,disabled:!title.trim()},'🧠 إنشاء المنهج'),
+    ),
+  );
+}
+
 function App(){
   const [page,setPage]=useState('home');
   const [lesson,setLesson]=useState(null);
   const [initCat,setInitCat]=useState('standard');
   const [settings,setSettings]=useState({dark:false,hc:false,dsf:false,dyslexia:false,size:'',tts:false});
+  
+  // Keyboard shortcuts
+  useEffect(()=>{
+    function handleKey(e){
+      if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
+      if(e.key==='1'&&e.altKey){e.preventDefault();setPage('home');}
+      if(e.key==='2'&&e.altKey){e.preventDefault();setPage('create');}
+      if(e.key==='3'&&e.altKey){e.preventDefault();setPage('curriculum');}
+      if(e.key==='d'&&e.ctrlKey){e.preventDefault();setSettings(s=>({...s,dark:!s.dark}));}
+      if(e.key==='h'&&e.ctrlKey){e.preventDefault();setSettings(s=>({...s,hc:!s.hc}));}
+    }
+    window.addEventListener('keydown',handleKey);
+    return ()=>window.removeEventListener('keydown',handleKey);
+  },[]);
+  
+  // Update page title on page change
+  useEffect(()=>{
+    const titles={home:'الرئيسية',create:'إنشاء',display:'المحتوى',preview:'معاينة',curriculum:'المنهج',history:'السجل'};
+    setPageTitle(titles[page]||'الرئيسية');
+  },[page]);
+  
   useEffect(()=>{
     const cls=[];
     if(settings.dark)cls.push('dark');
@@ -508,12 +664,26 @@ function App(){
     if(settings.size)cls.push(settings.size);
     document.body.className=cls.join(' ');
   },[settings]);
-  function handleStart(cat){setInitCat(cat);setPage('create')}
-  function handleGenerate(l){setLesson(l);setPage('display')}
+  
+  // Lesson history
+  const [history,setHistory]=useState([]);
+  useEffect(()=>{
+    const saved=localStorage.getItem('eduforge_history');
+    if(saved)setHistory(JSON.parse(saved));
+  },[]);
+  function addToHistory(l){
+    const h=[{id:l.id,title:l.title,category:l.category,date:new Date().toISOString()},...history.filter(x=>x.id!==l.id)].slice(0,20);
+    setHistory(h);localStorage.setItem('eduforge_history',JSON.stringify(h));
+  }
+  
+  function handleStart(cat){setInitCat(cat);setPage(cat==='curriculum'?'curriculum':'create')}
+  function handleGenerate(l){setLesson(l);setPage('display');addToHistory(l);}
   const navItems=[
     {id:'home',l:'🏠 الرئيسية'},{id:'create',l:'✏️ إنشاء'},
+    {id:'curriculum',l:'📖 المنهج'},
+    {id:'history',l:'📁 السجل'},
     lesson&&{id:'display',l:'📄 المحتوى'},
-    lesson&&{id:'preview',l:'👁 معاينة'},
+    lesson&&{id:'preview',l:'👁'},
   ].filter(Boolean);
   return React.createElement('div',null,
     React.createElement('nav',null,
@@ -523,10 +693,25 @@ function App(){
       ),
       React.createElement(A11yBar,{settings,setSettings}),
     ),
-    React.createElement('div',{className:'app-layout',id:'main'},
+    function HistoryPage({onSelect}){
+  return React.createElement('div',{className:'page-fade',style:{maxWidth:640,margin:'0 auto'}},
+    React.createElement('h2',{style:{marginBottom:16}},'📁 سجل الدروس'),
+    history.length===0
+      ?React.createElement('p',{style:{color:'var(--text3)'}},'لا توجد دروس محفوظة بعد')
+      :history.map((h,i)=>React.createElement('div',{key:i,className:'card',style:{marginBottom:8,cursor:'pointer'},onClick:()=>onSelect(h)},
+        React.createElement('div',{style:{fontWeight:700}},h.title),
+        React.createElement('div',{style:{fontSize:12,color:'var(--text3)'}},CATS.find(c=>c.id===h.category)?.icon+' '+CATS.find(c=>c.id===h.category)?.label+' • '+new Date(h.date).toLocaleDateString('ar')),
+      )),
+    history.length>0&&React.createElement('button',{className:'btn btn-sec',style:{marginTop:16},onClick:()=>{setHistory([]);localStorage.removeItem('eduforge_history');}},'🗑️ مسح السجل'),
+  );
+}
+
+React.createElement('div',{className:'app-layout',id:'main'},
       React.createElement('div',{className:'main-content'},
         page==='home'&&React.createElement(HomePage,{onStart:handleStart}),
         page==='create'&&React.createElement(CreatePage,{onGenerate:handleGenerate,initCat}),
+        page==='curriculum'&&React.createElement(CurriculumPage,{}),
+        page==='history'&&React.createElement(HistoryPage,{onSelect:(h)=>{setInitCat(h.category);setPage('home');}}),
         page==='display'&&lesson&&React.createElement(ContentDisplay,{lesson,settings,onPreview:()=>setPage('preview')}),
         page==='preview'&&lesson&&React.createElement(PreviewPage,{lesson,settings,onBack:()=>setPage('display')}),
       ),

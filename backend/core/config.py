@@ -12,9 +12,9 @@ class Settings:
         # OpenAI Configuration
         self.openai_api_key = os.getenv("OPENAI_API_KEY", "")
         self.openai_model = os.getenv("OPENAI_MODEL", "gpt-3.5-turbo")
-        self.use_mock_ai = os.getenv("USE_MOCK_AI", "true").lower() == "true"
-        if not self.openai_api_key:
-            self.use_mock_ai = True
+        # Use real AI if API key provided, otherwise mock
+        env_mock = os.getenv("USE_MOCK_AI", "").lower()
+        self.use_mock_ai = env_mock == "true" or not self.openai_api_key
         
         # Supabase Configuration
         self.supabase_url = os.getenv("SUPABASE_URL", "")
