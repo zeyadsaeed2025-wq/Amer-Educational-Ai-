@@ -1,17 +1,36 @@
-from http.server import BaseHTTPRequestHandler
-import json
+# Vercel Python Serverless Function
+# Format: handler(request, context) -> dict
 
-class handler(BaseHTTPRequestHandler):
-    def do_POST(self):
-        self.send_response(200)
-        self.send_header('Content-Type', 'application/json')
-        self.end_headers()
-        self.wfile.write(json.dumps({'success': True, 'path': self.path}).encode())
-        
-    def do_GET(self):
-        self.send_response(200)
-        self.send_header('Content-Type', 'application/json')
-        self.end_headers()
-        self.wfile.write(json.dumps({'success': True, 'method': 'GET', 'path': self.path}).encode())
-
-app = handler
+def handler(request, context):
+    """Vercel serverless function handler."""
+    path = request.path
+    method = request.method
+    
+    # Route based on path and method
+    if path == '/api/lessons' and method == 'GET':
+        return {
+            'statusCode': 200,
+            'body': '{"lessons": [], "total": 0}',
+            'headers': {'Content-Type': 'application/json'}
+        }
+    
+    if path == '/api/generate-content' and method == 'POST':
+        return {
+            'statusCode': 200,
+            'body': '{"id": "1", "title": "Generated", "category": "standard"}',
+            'headers': {'Content-Type': 'application/json'}
+        }
+    
+    if path == '/api/analyze-content' and method == 'POST':
+        return {
+            'statusCode': 200,
+            'body': '{"score": 75, "readability": 70}',
+            'headers': {'Content-Type': 'application/json'}
+        }
+    
+    # Default - frontend
+    return {
+        'statusCode': 200,
+        'body': '<html><body>EduForge API</body></html>',
+        'headers': {'Content-Type': 'text/html'}
+    }
