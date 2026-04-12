@@ -126,15 +126,20 @@ nav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script>
-window.ENV = window.ENV || {};
+window.ENV = window.ENV || {
+  API_BASE_URL: window.location.origin // For Vercel rewrites
+};
 </script>
 <script>
 const {useState,useEffect,useRef,useCallback,useMemo}=React;
 
 // ── API CONFIG ────────────────────────────────────────────────────
-// Backend URL - Relative path for Vercel rewrites
-const API_BASE = '';
-const WS_URL = '';
+// For production: Set VITE_API_URL in Vercel environment variables
+// For local: Uses localhost
+const API_BASE = window.ENV && window.ENV.API_BASE_URL || 'http://localhost:8000';
+const WS_URL = window.location.protocol === 'https:' 
+  ? 'wss://' + window.location.host + '/ws' 
+  : 'ws://localhost:8000/ws';
 
 async function apiFetch(path, body) {
   const res = await fetch(API_BASE + path, {
