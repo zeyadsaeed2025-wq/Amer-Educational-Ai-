@@ -2,42 +2,45 @@ from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
-@app.route('/api/lessons', methods=['GET'])
-def lessons():
-    return jsonify({'lessons': [], 'total': 0})
-
-@app.route('/health', methods=['GET'])
-def health():
-    return jsonify({'status': 'ok'})
-
-@app.route('/api/generate-content', methods=['POST'])
-def generate():
-    data = request.get_json(silent=True) or {}
-    title = data.get('title', 'Lesson')
-    return jsonify({
-        'id': '1', 'title': title, 'category': 'standard',
-        'standard': {'intro': 'intro', 'body': 'body', 'questions': [], 'activities': []},
-        'simplified': {'intro': 's', 'body': 's', 'questions': [], 'activities': []},
-        'accessibility': {'intro': 'a', 'body': 'a', 'questions': [], 'activities': []},
-        'ui_hints': {}, 'version': 1
-    })
-
-@app.route('/api/analyze-content', methods=['POST'])
-def analyze():
-    return jsonify({'score': 75, 'readability': 70, 'interactivity': 70, 'engagement': 65, 'alerts': [], 'suggestions': []})
-
-@app.route('/api/suggest-improvements', methods=['POST'])
-def suggest():
-    return jsonify({'suggestions': []})
-
-@app.route('/api/curriculum/generate', methods=['POST'])
-def curriculum():
-    return jsonify({'course_id': '1', 'course_title': 'Course', 'category': 'standard', 'objectives': [], 'units': [], 'total_lessons': 0, 'estimated_hours': 0})
-
-@app.route('/api/live-assist', methods=['POST'])
-def live():
-    return jsonify({'suggestions': []})
-
-@app.route('/api/smart-analyze', methods=['POST'])
-def smart():
-    return jsonify({'score': 75})
+@app.route('/', defaults={'path': ''}, methods=['GET', 'POST', 'PUT', 'DELETE'])
+@app.route('/<path:path>', methods=['GET', 'POST', 'PUT', 'DELETE'])
+def catch_all(path):
+    if request.method == 'GET':
+        if path == 'api/lessons' or path == 'api/lessons/':
+            return jsonify({'lessons': [], 'total': 0})
+        if path == 'health' or path == 'health/':
+            return jsonify({'status': 'ok'})
+        # Default - serve frontend
+        return '', 404
+    
+    if request.method == 'POST':
+        data = request.get_json(silent=True) or {}
+        
+        if path == 'api/generate-content' or path == 'api/generate-content/':
+            title = data.get('title', 'Lesson')
+            return jsonify({
+                'id': '1', 'title': title, 'category': 'standard',
+                'standard': {'intro': 'intro', 'body': 'body', 'questions': [], 'activities': []},
+                'simplified': {'intro': 's', 'body': 's', 'questions': [], 'activities': []},
+                'accessibility': {'intro': 'a', 'body': 'a', 'questions': [], 'activities': []},
+                'ui_hints': {}, 'version': 1
+            })
+        
+        if path == 'api/analyze-content' or path == 'api/analyze-content/':
+            return jsonify({'score': 75, 'readability': 70, 'interactivity': 70})
+        
+        if path == 'api/suggest-improvements' or path == 'api/suggest-improvements/':
+            return jsonify({'suggestions': []})
+        
+        if path == 'api/curriculum/generate' or path == 'api/curriculum/generate/':
+            return jsonify({'course_id': '1', 'course_title': 'Course', 'total_lessons': 0})
+        
+        if path == 'api/live-assist' or path == 'api/live-assist/':
+            return jsonify({'suggestions': []})
+        
+        if path == 'api/smart-analyze' or path == 'api/smart-analyze/':
+            return jsonify({'score': 75})
+        
+        return jsonify({'detail': 'Not found'}), 404
+    
+    return jsonify({'detail': 'Method not allowed'}), 405
