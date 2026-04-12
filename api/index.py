@@ -1,14 +1,15 @@
-# Simple standalone API for Vercel - no external dependencies
+"""
+EduForge AI API Handler for Vercel
+Simple standalone implementation - no external dependencies required
+"""
+
 import json
-import os
+import uuid
 
 def handler(request, context):
-    """Handle all API requests - simple standalone implementation."""
-    
     path = request.path
     method = request.method
     
-    # Get body
     body = None
     if method in ['POST', 'PUT', 'PATCH']:
         try:
@@ -17,40 +18,38 @@ def handler(request, context):
             body = {}
     
     try:
-        # Route based on path
         if path == '/api/lessons' and method == 'GET':
-            return lessons_handler()
+            return handle_lessons()
         
         elif path == '/api/generate-content' and method == 'POST':
-            return generate_handler(body)
+            return handle_generate_content(body)
         
         elif path == '/api/analyze-content' and method == 'POST':
-            return analyze_handler(body)
+            return handle_analyze_content(body)
         
         elif path == '/api/suggest-improvements' and method == 'POST':
-            return suggest_handler(body)
+            return handle_suggestions(body)
         
         elif path == '/api/curriculum/generate' and method == 'POST':
-            return curriculum_handler(body)
+            return handle_curriculum(body)
         
         elif path == '/api/live-assist' and method == 'POST':
-            return live_assist_handler(body)
+            return handle_live_assist(body)
         
         elif path == '/api/smart-analyze' and method == 'POST':
-            return smart_analyze_handler(body)
+            return handle_smart_analyze(body)
         
         elif path == '/health' and method == 'GET':
-            return json_response({'status': 'ok', 'service': 'EduForge AI', 'version': '1.0.0'})
+            return json_response({'status': 'ok', 'service': 'EduForge AI'})
         
         else:
             return json_response({'detail': 'Not found'}, status=404)
-            
+    
     except Exception as e:
         return json_response({'detail': str(e)}, status=500)
 
 
 def json_response(data, status=200):
-    """Return JSON response."""
     return {
         'statusCode': status,
         'body': json.dumps(data, ensure_ascii=False),
@@ -58,9 +57,7 @@ def json_response(data, status=200):
     }
 
 
-# Handlers
-def lessons_handler():
-    """Get lessons."""
+def handle_lessons():
     return json_response({
         'lessons': [],
         'total': 0,
@@ -69,94 +66,44 @@ def lessons_handler():
     })
 
 
-def generate_handler(data):
-    """Generate educational content."""
+def handle_generate_content(data):
     title = data.get('title', '')
     if not title:
         return json_response({'detail': 'Title is required'}, status=400)
     
     category = data.get('category', 'standard')
+    lesson_id = 'lesson_' + str(abs(hash(title)) % 100000)
     
-    # Generate content
     content = {
-        'id': 'lesson_' + str(hash(title))[:8],
+        'id': lesson_id,
         'title': title,
         'category': category,
         'standard': {
-            'intro': f'مرحباً بك في درس: {title}\n\nهذا الدرس مصمم لطلاب الفئة العادية.',
-            'body': f'''# درس: {title}
-
-## المقدمة
-{title} من المواضيع المهمة في المنهج التعليمي. سنتناول هذا الموضوع بالتفصيل.
-
-## الأهداف التعليمية
-بنهاية هذا الدرس، سيتمكن الطالب من:
-- فهم المفاهيم الأساسية المتعلقة بـ {title}
-- تطبيق المهارات المكتسبة
-- تحليل المواقف المختلفة
-
-## المحتوى
-### الجزء الأول
-شرح تفصيلي للمفاهيم الأساسية مع أمثلة توضيحية.
-
-### الجزء الثاني
-تطبيقات عملية على ما تعلمته.
-
-## الأنشطة التعليمية
-- نشاط تفاعلي 1
-- نشاط تفاعلي 2
-- مشروع صغير
-
-## أسئلة للمراجعة
-1. ما المفهوم الأساسي الذي تعلمته؟
-2. كيف يمكنك تطبيق هذا في حياتك اليومية؟
-3. ما أهم المهارات المكتسبة؟''',
-            'questions': [
-                'ما هو المفهوم الأساسي في هذا الدرس؟',
-                'كيف يمكنك تطبيق ما تعلمته؟',
-                'ما الأنشطة التي أفادت تعلمك؟'
-            ],
-            'activities': ['نشاط تفاعلي 1', 'نشاط تفاعلي 2', 'مشروع صغير']
+            'intro': 'مرحباً بك في درس: ' + title + '\n\nهذا الدرس مصمم لطلاب الفئة العادية.',
+            'body': '# درس: ' + title + '\n\n## المقدمة\n' + title + ' من أهم المواضيع التعليمية.\n\n## الأهداف\n- فهم المفاهيم الأساسية\n- تطبيق المهارات\n\n## المحتوى\nشرح تفصيلي للموضوع...\n\n## أسئلة\n1. ما المفهوم الأساسي؟\n2. كيف تطبق؟',
+            'questions': ['ما المفهوم الأساسي؟', 'كيف تطبق؟'],
+            'activities': ['نشاط 1', 'نشاط 2']
         },
         'simplified': {
-            'intro': f'درس: {title}\n\nسهل ومبسط.',
-            'body': f'''# {title}
-
-## بسيط
-كل ما تحتاج معرفته في هذا الدرس.
-
-## اشرح
-شرح سهل ومبسط لكل جزء.
-
-## سؤال
-سؤال بسيط للمراجعة.''',
+            'intro': 'درس: ' + title,
+            'body': '# ' + title + '\n\nشرح بسيط...\n\nسؤال؟',
             'questions': ['ما الدرس عنه؟'],
             'activities': ['نشاط']
         },
         'accessibility': {
-            'intro': f'درس {title}',
-            'body': f'''# {title}
-
-*نص واضح*
-
-- نقطة 1
-- نقطة 2
-- نقطة 3''',
+            'intro': 'درس ' + title,
+            'body': '# ' + title + '\n\nنص واضح...\n\nسؤال.',
             'questions': ['سؤال'],
             'activities': []
         },
-        'ui_hints': {
-            'font_size': 'normal',
-            'high_contrast': False
-        },
+        'ui_hints': {'font_size': 'normal', 'high_contrast': False},
         'version': 1
     }
     
     return json_response(content)
 
 
-def analyze_handler(data):
-    """Analyze content quality."""
+def handle_analyze_content(data):
     text = data.get('text', '')
     text_len = len(text)
     
@@ -168,12 +115,9 @@ def analyze_handler(data):
     suggestions = []
     
     if text_len < 100:
-        alerts.append({'type': 'warn', 'msg': 'المحتوى قصير جداً'})
+        alerts.append({'type': 'warn', 'msg': 'المحتوى قصير'})
     if '?' not in text and '؟' not in text:
         alerts.append({'type': 'warn', 'msg': 'لا توجد أسئلة'})
-    
-    if len(text.split()) < 50:
-        suggestions.append('أضف المزيد من المحتوى')
     
     return json_response({
         'score': score,
@@ -185,27 +129,19 @@ def analyze_handler(data):
     })
 
 
-def suggest_handler(data):
-    """Get improvement suggestions."""
+def handle_suggestions(data):
     return json_response({
-        'suggestions': [
-            'حسن استخدام العناوين',
-            'أضف أمثلة عملية',
-            'قسم المحتوى لفقرات أصغر',
-            'أضف أسئلة تفاعلية'
-        ],
+        'suggestions': ['حسن العناوين', 'أضف أمثلة', 'قسم الفقرات'],
         'improvements': []
     })
 
 
-def curriculum_handler(data):
-    """Generate curriculum."""
+def handle_curriculum(data):
     title = data.get('title', 'منهج تعليمي')
     category = data.get('category', 'standard')
-    num_units = data.get('num_units', 3)
-    lessons_per_unit = data.get('lessons_per_unit', 4)
+    num_units = min(10, max(1, data.get('num_units', 3)))
+    lessons_per_unit = min(10, max(1, data.get('lessons_per_unit', 4)))
     
-    import uuid
     course_id = str(uuid.uuid4())[:8]
     
     units = []
@@ -213,54 +149,47 @@ def curriculum_handler(data):
         lessons = []
         for j in range(lessons_per_unit):
             lessons.append({
-                'title': f'الدرس {j+1}: وحدة {i+1}',
-                'objectives': ['فهم المفهوم', 'تطبيق المهارة'],
+                'title': 'الدرس ' + str(j+1),
+                'objectives': ['فهم المفهوم'],
                 'duration_minutes': 30
             })
         
         units.append({
-            'unit_title': f'الوحدة {i+1}',
-            'unit_objectives': [f'فهم أساسيات الوحدة {i+1}', 'تطبيق المهارات'],
+            'unit_title': 'الوحدة ' + str(i+1),
+            'unit_objectives': ['فهم الأساسيات'],
             'lessons': lessons,
-            'assessment': f'اختبار الوحدة {i+1}'
+            'assessment': 'اختبار'
         })
     
     return json_response({
         'course_id': course_id,
         'course_title': title,
         'category': category,
-        'objectives': ['فهم المفاهيم الأساسية', 'تطوير المهارات', 'تطبيق التعلم'],
+        'objectives': ['فهم المفاهيم'],
         'units': units,
         'total_lessons': num_units * lessons_per_unit,
         'estimated_hours': (num_units * lessons_per_unit * 30) // 60
     })
 
 
-def live_assist_handler(data):
-    """Live AI assistance."""
+def handle_live_assist(data):
     return json_response({
-        'suggestions': [
-            'جرب إضافة مثال توضيحي',
-            'قسم هذا الجزء لفقرات أصغر',
-            'أضف سؤال تفاعلي'
-        ],
+        'suggestions': ['أضف مثال', 'قسم الفقرات', 'أضف سؤال'],
         'improved_text': data.get('text', ''),
-        'improvements': ['تحسين البنية', 'إضافة أمثلة']
+        'improvements': []
     })
 
 
-def smart_analyze_handler(data):
-    """Smart AI analysis."""
+def handle_smart_analyze(data):
     return json_response({
         'score': 75,
         'engagement_level': 'medium',
         'complexity_level': 'medium',
         'alerts': [],
-        'suggestions': ['جيد', 'можно تحسين'],
+        'suggestions': ['جيد'],
         'readability_score': 70,
         'interactivity_score': 65
     })
 
 
-# Vercel app
 app = None
