@@ -36,11 +36,17 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS Middleware
-origins = settings.cors_origins
+# CORS Middleware - Allow Vercel and localhost
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=[
+        "https://amer-educational-ai.vercel.app",
+        "https://*.vercel.app",
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "http://localhost:8000",
+        "*",  # Allow all for development
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

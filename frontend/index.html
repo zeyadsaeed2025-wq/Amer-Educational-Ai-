@@ -127,19 +127,21 @@ nav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script>
 // Inject environment variables
-window.ENV = {
-  API_BASE_URL: window.location.origin,
-};
+window.ENV = window.ENV || {};
+
+// API Configuration - Update this to your backend URL
+// For Vercel deployment: Set via VERCEL_URL or manually
+window.ENV.API_BASE_URL = window.ENV.API_BASE_URL || 
+  (typeof import.meta !== 'undefined' ? import.meta.env.VITE_API_URL : null) ||
+  'https://eduforge-ai-backend.railway.app'; // Your deployed backend URL
 </script>
 <script>
 const {useState,useEffect,useRef,useCallback,useMemo}=React;
 
 // ── API CONFIG ────────────────────────────────────────────────────
-// Use environment variable or fallback to localhost for development
-const API_BASE = (typeof window !== 'undefined' && window.ENV && window.ENV.API_BASE_URL) 
-  ? window.ENV.API_BASE_URL 
-  : 'http://localhost:8000';
-const WS_URL = API_BASE.replace('http', 'ws') + '/ws';
+// Use relative URLs - Vercel rewrites /api/* to backend
+const API_BASE = '';  // Use relative URLs - Vercel rewrites to backend
+const WS_URL = (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + '/ws';
 
 async function apiFetch(path, body) {
   const res = await fetch(API_BASE + path, {
@@ -154,39 +156,56 @@ async function apiFetch(path, body) {
   return res.json();
 }
 
-// WebSocket singleton — sends {type:'analyze', text, tab} → receives quality_update
+// Quality analysis - uses REST API with debounce (WebSocket fallback for local dev)
 function useQualityWS(text, tab, enabled) {
   const [quality, setQuality] = useState({score:0,readability:0,interactivity:0,engagement:0,alerts:[],suggestions:[]});
-  const wsRef = useRef(null);
   const timerRef = useRef(null);
+  const wsRef = useRef(null);
 
+  // Try WebSocket first in development, fall back to REST
   useEffect(() => {
-    const ws = new WebSocket(WS_URL);
-    wsRef.current = ws;
-    ws.onmessage = (e) => {
-      try {
-        const d = JSON.parse(e.data);
-        if (d.type === 'quality_update') setQuality(d);
-      } catch {}
+    // Skip WebSocket on production (Vercel doesn't support it)
+    if (window.location.hostname.includes('vercel.app')) {
+      return; // Use REST API only
+    }
+    
+    try {
+      const ws = new WebSocket(WS_URL);
+      wsRef.current = ws;
+      ws.onmessage = (e) => {
+        try {
+          const d = JSON.parse(e.data);
+          if (d.type === 'quality_update') setQuality(d);
+        } catch {}
+      };
+      ws.onerror = () => {}; // silent — fallback to REST
+    } catch {}
+    
+    return () => {
+      if (wsRef.current) wsRef.current.close();
     };
-    ws.onerror = () => {}; // silent — fallback to REST
-    return () => ws.close();
   }, []);
 
   useEffect(() => {
     if (!enabled || !text || text.length < 5) return;
     clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
+      // Use WebSocket if available
       const ws = wsRef.current;
       if (ws && ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({type:'analyze', text, tab}));
       } else {
-        // REST fallback when WS not ready
-        apiFetch('/api/analyze-content', {text, tab})
+        // REST API fallback
+        fetch('/api/analyze-content', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({text, tab}),
+        })
+          .then(res => res.json())
           .then(d => setQuality(d))
           .catch(() => {});
       }
-    }, 600); // debounce 600ms
+    }, 600);
     return () => clearTimeout(timerRef.current);
   }, [text, tab, enabled]);
 
