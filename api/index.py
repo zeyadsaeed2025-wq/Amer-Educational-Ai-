@@ -3,9 +3,16 @@ import json
 import uuid
 import sys
 
+# Debug - write to stderr to see in Vercel logs
+def debug(msg):
+    try:
+        sys.stderr.write(str(msg) + '\n')
+    except:
+        pass
+
 class handler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
-        pass  # Suppress logs
+        pass
     
     def do_GET(self):
         try:
@@ -18,25 +25,39 @@ class handler(BaseHTTPRequestHandler):
                 self.send_response(200)
                 self.send_header('Content-Type', 'application/json')
                 self.end_headers()
-                self.wfile.write(json.dumps({'status': 'ok', 'service': 'EduForge AI', 'version': '1.0.0'}).encode())
+                self.wfile.write(json.dumps({'status': 'ok', 'service': 'EduForge AI'}).encode())
             else:
                 self.send_response(404)
                 self.end_headers()
         except Exception as e:
+            debug(f'GET error: {e}')
             self.send_response(500)
             self.end_headers()
     
     def do_POST(self):
+        data = {}
         try:
+            # Get body
             length = int(self.headers.get('Content-Length', 0) or 0)
-            body = self.rfile.read(length) if length > 0 else b''
-            # Try to decode body
-            try:
-                data = json.loads(body) if body else {}
-            except:
-                data = json.loads(body.decode('utf-8')) if body else {}
+            debug(f'POST length: {length}')
+            
+            if length > 0:
+                body = self.rfile.read(length)
+                debug(f'POST body: {body[:100]}')
+                
+                # Try JSON parse
+                try:
+                    data = json.loads(body)
+                    debug(f'Parsed data: {data}')
+                except Exception as e:
+                    debug(f'Parse error: {e}')
+                    # Try UTF-8
+                    try:
+                        data = json.loads(body.decode('utf-8'))
+                    except:
+                        data = {}
         except Exception as e:
-            data = {}
+            debug(f'Body read error: {e}')
         
         try:
             if self.path == '/api/generate-content':
@@ -52,9 +73,11 @@ class handler(BaseHTTPRequestHandler):
             elif self.path == '/api/smart-analyze':
                 self.handle_smart_analyze(data)
             else:
+                debug(f'Unknown path: {self.path}')
                 self.send_response(404)
                 self.end_headers()
         except Exception as e:
+            debug(f'Handler error: {e}')
             self.send_response(500)
             self.send_header('Content-Type', 'application/json')
             self.end_headers()
@@ -69,7 +92,7 @@ class handler(BaseHTTPRequestHandler):
     def handle_generate(self, data):
         title = data.get('title', '')
         if not title:
-            return self.send_json({'detail': 'Title is required'}, 400)
+            return self.send_json({'detail': 'Title required'}, 400)
         
         cat = data.get('category', 'standard')
         content = {
@@ -77,24 +100,24 @@ class handler(BaseHTTPRequestHandler):
             'title': title,
             'category': cat,
             'standard': {
-                'intro': 'مرحباً بك في درس: ' + title + '\n\nهذا الدرس مصمم لطلاب الفئة العادية.',
-                'body': '# درس: ' + title + '\n\n## المقدمة\n' + title + ' من أهم المواضيع التعليمية.\n\n## الأهداف\n- فهم المفاهيم الأساسية\n- تطبيق المهارات\n- تطوير التفكير النقدي\n\n## المحتوى\nشرح تفصيلي للمفهوم...\n\n## أسئلة\n1. ما المفهوم الأساسي؟\n2. كيف تطبق؟\n3. ما المهارات المكتسبة؟',
-                'questions': ['ما المفهوم الأساسي؟', 'كيف تطبق في حياتك؟', 'ما أهم مهارة اكتسبتها؟'],
-                'activities': ['نشاط تفاعلي 1', 'نشاط تفاعلي 2']
+                'intro': 'مرحباً بك في درس: ' + title,
+                'body': '# درس: ' + title + '\n\n## المقدمة\n' + title + ' من المواضيع المهمة.\n\n## الأهداف\n- فهم المفاهيم\n- تطبيق المهارات\n\n## الأسئلة\n1. ما المفهوم الأساسي؟\n2. كيف تطبق؟',
+                'questions': ['ما المفهوم الأساسي؟', 'كيف تطبق؟'],
+                'activities': ['نشاط 1']
             },
             'simplified': {
-                'intro': 'درس: ' + title + '\n\nشرح مبسط.',
-                'body': '# ' + title + '\n\n## بسيط\nكل ما تحتاج معرفته.\n\n## سؤال\nما الدرس عنه؟',
+                'intro': 'درس: ' + title,
+                'body': '# ' + title + '\n\nشرح مبسط\n\nسؤال؟',
                 'questions': ['ما الدرس عنه؟'],
                 'activities': ['نشاط']
             },
             'accessibility': {
                 'intro': 'درس ' + title,
-                'body': '# ' + title + '\n\n*نص واضح*\n\n- نقطة 1\n- نقطة 2',
+                'body': '# ' + title + '\n\nنص واضح\n\nسؤال',
                 'questions': ['سؤال'],
                 'activities': []
             },
-            'ui_hints': {'font_size': 'normal', 'high_contrast': False},
+            'ui_hints': {},
             'version': 1
         }
         self.send_json(content)
@@ -107,36 +130,35 @@ class handler(BaseHTTPRequestHandler):
             'readability': min(100, max(40, len(text) // 30)),
             'interactivity': 70,
             'engagement': score - 10,
-            'alerts': [{'type': 'warn', 'msg': 'المحتوى قصير'}] if len(text) < 100 else [],
-            'suggestions': ['أضف أمثلة'] if len(text.split()) < 50 else []
+            'alerts': [],
+            'suggestions': []
         })
     
     def handle_suggest(self, data):
         self.send_json({
-            'suggestions': ['حسن العناوين', 'أضف أمثلة عملية', 'قسم الفقرات', 'أضف أسئلة'],
+            'suggestions': ['حسن العناوين', 'أضف أمثلة'],
             'improvements': []
         })
     
     def handle_curriculum(self, data):
-        title = data.get('title', 'منهج تعليمي')
-        cat = data.get('category', 'standard')
-        units = data.get('num_units', 3)
-        lessons = data.get('lessons_per_unit', 4)
+        title = data.get('title', 'منهج')
+        units = data.get('num_units', 2)
+        lessons = data.get('lessons_per_unit', 2)
         
         course_units = []
         for i in range(units):
             course_units.append({
                 'unit_title': 'الوحدة ' + str(i+1),
-                'unit_objectives': ['فهم أساسيات الوحدة', 'تطبيق المهارات'],
+                'unit_objectives': ['فهم الأساسيات'],
                 'lessons': [{'title': 'الدرس ' + str(j+1), 'objectives': [], 'duration_minutes': 30} for j in range(lessons)],
-                'assessment': 'اختبار شامل'
+                'assessment': 'اختبار'
             })
         
         self.send_json({
             'course_id': str(uuid.uuid4())[:8],
             'course_title': title,
-            'category': cat,
-            'objectives': ['فهم المفاهيم', 'تطوير المهارات'],
+            'category': data.get('category', 'standard'),
+            'objectives': ['فهم المفاهيم'],
             'units': course_units,
             'total_lessons': units * lessons,
             'estimated_hours': (units * lessons * 30) // 60
@@ -144,7 +166,7 @@ class handler(BaseHTTPRequestHandler):
     
     def handle_live_assist(self, data):
         self.send_json({
-            'suggestions': ['أضف مثال', 'قسم الفقرات', 'أضف سؤال'],
+            'suggestions': ['أضف مثال'],
             'improved_text': data.get('text', ''),
             'improvements': []
         })
