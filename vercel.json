@@ -4,20 +4,19 @@
     {
       "src": "backend/index.html",
       "use": "@vercel/static"
-    },
-    {
-      "src": "backend/main.py",
-      "use": "@vercel/python"
     }
   ],
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "backend/main.py"
+      "dest": "/backend/main.py"
+    },
+    {
+      "handle": "filesystem"
     },
     {
       "src": "/(.*)",
-      "dest": "backend/index.html"
+      "dest": "/backend/index.html"
     }
   ]
 }
