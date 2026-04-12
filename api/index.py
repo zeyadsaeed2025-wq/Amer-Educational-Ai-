@@ -1,14 +1,21 @@
-# Vercel API entry point - FastAPI on Vercel
-import sys
+# Vercel API entry point
 import os
+import sys
+
+# Determine the correct path to backend
+current_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.dirname(current_dir)  # Go up one level from 'api' to project root
+backend_path = os.path.join(project_root, 'backend')
 
 # Add backend to path
-backend_dir = os.path.join(os.path.dirname(__file__), '..', 'backend')
-if backend_dir not in sys.path:
-    sys.path.insert(0, backend_dir)
+if backend_path not in sys.path:
+    sys.path.insert(0, backend_path)
 
-# Import the FastAPI app
-from main import app
+# Change to backend directory for relative imports
+os.chdir(backend_path)
 
-# Export for Vercel
-# Vercel's Python runtime will use this as the ASGI app
+# Now import the app
+from main import app as application
+
+# Vercel requires the app to be named 'app'
+app = application
