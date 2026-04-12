@@ -1,9 +1,10 @@
 from flask import Flask, jsonify, send_from_directory
 import os
 
+# MUST be named 'app' for Vercel
 app = Flask(__name__)
 
-# API routes
+# API Endpoints
 @app.route('/api/lessons', methods=['GET'])
 def lessons():
     return jsonify({'lessons': [], 'total': 0})
@@ -24,7 +25,7 @@ def generate():
 
 @app.route('/api/analyze-content', methods=['POST'])
 def analyze():
-    return jsonify({'score': 75, 'readability': 70})
+    return jsonify({'score': 75})
 
 @app.route('/api/suggest-improvements', methods=['POST'])
 def suggest():
@@ -32,7 +33,7 @@ def suggest():
 
 @app.route('/api/curriculum/generate', methods=['POST'])
 def curriculum():
-    return jsonify({'course_id': '1', 'course_title': 'Course', 'total_lessons': 0})
+    return jsonify({'course_id': '1'})
 
 @app.route('/api/live-assist', methods=['POST'])
 def live():
@@ -42,22 +43,14 @@ def live():
 def smart():
     return jsonify({'score': 75})
 
-# Frontend
+# Frontend - serve from public folder concept
 @app.route('/')
 def index():
     return send_from_directory('.', 'frontend.html')
 
-@app.route('/<path:filename>')
-def serve_files(filename):
-    # Try current directory first
-    if os.path.exists(filename):
-        return send_from_directory('.', filename)
-    # Try frontend.html for root-relative paths
-    if filename == 'frontend.html' and os.path.exists('frontend.html'):
-        return send_from_directory('.', 'frontend.html')
+@app.route('/<path:path>')
+def serve(path):
+    if os.path.exists(path):
+        return send_from_directory('.', path)
     # Default to frontend
-    if os.path.exists('frontend.html'):
-        return send_from_directory('.', 'frontend.html')
-    return 'Not Found', 404
-
-handler = app
+    return send_from_directory('.', 'frontend.html')
