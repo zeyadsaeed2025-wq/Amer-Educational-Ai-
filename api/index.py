@@ -1,6 +1,5 @@
 from http.server import BaseHTTPRequestHandler
 import json
-import uuid
 
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -19,21 +18,26 @@ class handler(BaseHTTPRequestHandler):
             self.end_headers()
     
     def do_POST(self):
-        length = int(self.headers.get('Content-Length', 0))
-        body = json.loads(self.rfile.read(length)) if length > 0 else {}
+        try:
+            length = int(self.headers.get('Content-Length', 0) or 0)
+            body = self.rfile.read(length) if length > 0 else b''
+            data = json.loads(body) if body else {}
+        except:
+            data = {}
         
         if self.path == '/api/generate-content':
-            title = body.get('title', 'test')
-            self.send_response(200)
-            self.send_header('Content-Type', 'application/json')
-            self.end_headers()
-            self.wfile.write(json.dumps({
+            title = data.get('title', 'test')
+            resp = json.dumps({
                 'id': '1', 'title': title, 'category': 'standard',
                 'standard': {'intro': 'intro', 'body': 'body', 'questions': [], 'activities': []},
                 'simplified': {'intro': 'intro', 'body': 'body', 'questions': [], 'activities': []},
                 'accessibility': {'intro': 'intro', 'body': 'body', 'questions': [], 'activities': []},
                 'ui_hints': {}, 'version': 1
-            }).encode())
+            })
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(resp.encode())
         else:
             self.send_response(404)
             self.end_headers()
