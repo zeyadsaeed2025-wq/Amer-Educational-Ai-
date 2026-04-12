@@ -1,14 +1,13 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 app = Flask(__name__)
 
-@app.route('/')
-def index():
-    return jsonify({'message': 'Hello from Flask!'})
+@app.route('/', defaults={'path': ''}, methods=['GET', 'POST'])
+@app.route('/<path:path>', methods=['GET', 'POST'])
+def catch_all(path):
+    return jsonify({
+        'path': path,
+        'method': request.method
+    })
 
-@app.route('/test')
-def test():
-    return jsonify({'test': 'ok'})
-
-@app.route('/api/anything', methods=['POST'])
-def anything():
-    return jsonify({'ok': True})
+if __name__ == '__main__':
+    app.run(debug=True)
