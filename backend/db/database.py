@@ -1,34 +1,39 @@
 """
-Database module supporting both SQLite (local) and Supabase (production).
+Database module supporting SQLite, Supabase, and Railway PostgreSQL.
 """
 import os
 import json
 import logging
-from typing import Optional, List, Dict
-from datetime import datetime
-from pydantic import BaseModel
+from typing import Optional, List
 
 logger = logging.getLogger(__name__)
 
-# Check if Supabase is configured
+# Check database configuration
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+DATABASE_URL = os.getenv("DATABASE_URL")  # Railway PostgreSQL
 
 USE_SUPABASE = bool(SUPABASE_URL and SUPABASE_KEY)
+USE_POSTGRES = bool(DATABASE_URL and not USE_SUPABASE)
 
 
 class DatabaseManager:
-    """Database manager that switches between SQLite and Supabase."""
+    """Database manager supporting SQLite, Supabase, and PostgreSQL."""
     
     def __init__(self):
         self._sqlite = None
-        self._supabase = None
+        self._client = None
+        self._engine = None
+        self._SessionLocal = None
         
-        if USE_SUPABASE:
-            logger.info("Using Supabase database")
+        if USE_POSTGRES:
+            logger.info("Using Railway PostgreSQL")
+            self._init_postgres()
+        elif USE_SUPABASE:
+            logger.info("Using Supabase")
             self._init_supabase()
         else:
-            logger.info("Using SQLite database (local development)")
+            logger.info("Using SQLite (local development)")
             self._init_sqlite()
     
     def _init_sqlite(self):
@@ -38,27 +43,39 @@ class DatabaseManager:
             from sqlalchemy.orm import sessionmaker
             from sqlalchemy.ext.declarative import declarative_base
             
-            self.engine = create_engine(
+            self._engine = create_engine(
                 "sqlite:///./eduforge.db",
                 connect_args={"check_same_thread": False}
             )
-            self.SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=self.engine)
-            self.Base = declarative_base()
-            
-            # Create tables
+            self._SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=self._engine)
+            self._Base = declarative_base()
             self._create_tables_sqlite()
             logger.info("SQLite initialized")
         except Exception as e:
             logger.error(f"SQLite init error: {e}")
             raise
     
+    def _init_postgres(self):
+        """Initialize Railway PostgreSQL connection."""
+        try:
+            from sqlalchemy import create_engine
+            from sqlalchemy.orm import sessionmaker
+            from sqlalchemy.ext.declarative import declarative_base
+            
+            self._engine = create_engine(DATABASE_URL)
+            self._SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=self._engine)
+            self._Base = declarative_base()
+            self._create_tables_postgres()
+            logger.info("PostgreSQL initialized")
+        except Exception as e:
+            logger.error(f"PostgreSQL init error: {e}")
+            self._init_sqlite()
+    
     def _init_supabase(self):
         """Initialize Supabase connection."""
         try:
             from supabase import create_client
-            
-            self.client = create_client(SUPABASE_URL, SUPABASE_KEY)
-            self._create_tables_supabase()
+            self._client = create_client(SUPABASE_URL, SUPABASE_KEY)
             logger.info("Supabase initialized")
         except ImportError:
             logger.warning("supabase-py not installed, falling back to SQLite")
@@ -71,7 +88,7 @@ class DatabaseManager:
         """Create SQLite tables."""
         from sqlalchemy import Column, String, DateTime, Text
         
-        class Lesson(self.Base):
+        class Lesson(self._Base):
             __tablename__ = "lessons"
             id = Column(String, primary_key=True)
             title = Column(String)
@@ -80,28 +97,37 @@ class DatabaseManager:
             content_simplified = Column(Text)
             content_accessibility = Column(Text)
             ui_hints = Column(Text)
-            created_at = Column(DateTime, default=datetime.utcnow)
-            updated_at = Column(DateTime, default=datetime.utcnow)
+            created_at = Column(DateTime)
+            updated_at = Column(DateTime)
         
-        self.Base.metadata.create_all(bind=self.engine)
-        self.Lesson = Lesson
+        self._Base.metadata.create_all(bind=self._engine)
+        self._Lesson = Lesson
     
-    def _create_tables_supabase(self):
-        """Create Supabase tables via client."""
-        # Tables will be created in Supabase dashboard
-        # This just verifies connection
-        try:
-            self.client.table("lessons").select("id").limit(1).execute()
-        except:
-            logger.warning("Lessons table may not exist in Supabase")
+    def _create_tables_postgres(self):
+        """Create PostgreSQL tables."""
+        from sqlalchemy import Column, String, DateTime, Text, text
+        
+        class Lesson(self._Base):
+            __tablename__ = "lessons"
+            id = Column(String(50), primary_key=True)
+            title = Column(String(500))
+            category = Column(String(50))
+            content_standard = Column(Text)
+            content_simplified = Column(Text)
+            content_accessibility = Column(Text)
+            ui_hints = Column(Text)
+            created_at = Column(DateTime, server_default=text("NOW()"))
+            updated_at = Column(DateTime, server_default=text("NOW()"))
+        
+        self._Base.metadata.create_all(bind=self._engine)
+        self._Lesson = Lesson
     
-    # SQLite Operations
-    def create_lesson_sqlite(self, session, lesson_id: str, title: str, category: str, content: dict) -> str:
-        """Create lesson in SQLite."""
+    # SQL Operations (SQLite & PostgreSQL)
+    def _create_lesson_sql(self, session, lesson_id: str, title: str, category: str, content: dict):
+        """Create lesson in SQL database."""
         from datetime import datetime
-        from sqlalchemy import Column, String, DateTime, Text
         
-        lesson = self.Lesson(
+        lesson = self._Lesson(
             id=lesson_id,
             title=title,
             category=category,
@@ -109,14 +135,15 @@ class DatabaseManager:
             content_simplified=json.dumps(content.get("simplified", {})),
             content_accessibility=json.dumps(content.get("accessibility", {})),
             ui_hints=json.dumps(content.get("ui_hints", {})),
+            created_at=datetime.utcnow(),
         )
         session.add(lesson)
         session.commit()
         return lesson_id
     
-    def get_lesson_sqlite(self, session, lesson_id: str) -> Optional[dict]:
-        """Get lesson from SQLite."""
-        lesson = session.query(self.Lesson).filter(self.Lesson.id == lesson_id).first()
+    def _get_lesson_sql(self, session, lesson_id: str) -> Optional[dict]:
+        """Get lesson from SQL database."""
+        lesson = session.query(self._Lesson).filter(self._Lesson.id == lesson_id).first()
         if lesson:
             return {
                 "id": lesson.id,
@@ -129,9 +156,9 @@ class DatabaseManager:
             }
         return None
     
-    def get_all_lessons_sqlite(self, session, skip: int = 0, limit: int = 100) -> List[dict]:
-        """Get all lessons from SQLite."""
-        lessons = session.query(self.Lesson).offset(skip).limit(limit).all()
+    def _get_all_lessons_sql(self, session, skip: int = 0, limit: int = 100) -> List[dict]:
+        """Get all lessons from SQL database."""
+        lessons = session.query(self._Lesson).order_by(self._Lesson.created_at.desc()).offset(skip).limit(limit).all()
         return [
             {
                 "id": l.id,
@@ -143,7 +170,7 @@ class DatabaseManager:
         ]
     
     # Supabase Operations
-    def create_lesson_supabase(self, lesson_id: str, title: str, category: str, content: dict) -> str:
+    def _create_lesson_supabase(self, lesson_id: str, title: str, category: str, content: dict) -> str:
         """Create lesson in Supabase."""
         data = {
             "id": lesson_id,
@@ -154,13 +181,13 @@ class DatabaseManager:
             "content_accessibility": json.dumps(content.get("accessibility", {})),
             "ui_hints": json.dumps(content.get("ui_hints", {})),
         }
-        self.client.table("lessons").insert(data).execute()
+        self._client.table("lessons").insert(data).execute()
         return lesson_id
     
-    def get_lesson_supabase(self, lesson_id: str) -> Optional[dict]:
+    def _get_lesson_supabase(self, lesson_id: str) -> Optional[dict]:
         """Get lesson from Supabase."""
         try:
-            response = self.client.table("lessons").select("*").eq("id", lesson_id).execute()
+            response = self._client.table("lessons").select("*").eq("id", lesson_id).execute()
             if response.data:
                 data = response.data[0]
                 return {
@@ -176,10 +203,10 @@ class DatabaseManager:
             logger.error(f"Supabase get error: {e}")
         return None
     
-    def get_all_lessons_supabase(self, skip: int = 0, limit: int = 100) -> List[dict]:
+    def _get_all_lessons_supabase(self, skip: int = 0, limit: int = 100) -> List[dict]:
         """Get all lessons from Supabase."""
         try:
-            response = self.client.table("lessons").select("id,title,category,created_at").range(skip, skip + limit - 1).execute()
+            response = self._client.table("lessons").select("id,title,category,created_at").range(skip, skip + limit - 1).execute()
             return [
                 {
                     "id": l["id"],
@@ -197,41 +224,45 @@ class DatabaseManager:
     def create_lesson(self, lesson_id: str, title: str, category: str, content: dict) -> str:
         """Create lesson (auto-detects database)."""
         if USE_SUPABASE:
-            return self.create_lesson_supabase(lesson_id, title, category, content)
-        else:
-            session = self.SessionLocal()
+            return self._create_lesson_supabase(lesson_id, title, category, content)
+        elif self._SessionLocal:
+            session = self._SessionLocal()
             try:
-                return self.create_lesson_sqlite(session, lesson_id, title, category, content)
+                return self._create_lesson_sql(session, lesson_id, title, category, content)
             finally:
                 session.close()
+        else:
+            raise Exception("No database configured")
     
     def get_lesson(self, lesson_id: str) -> Optional[dict]:
         """Get lesson by ID (auto-detects database)."""
         if USE_SUPABASE:
-            return self.get_lesson_supabase(lesson_id)
-        else:
-            session = self.SessionLocal()
+            return self._get_lesson_supabase(lesson_id)
+        elif self._SessionLocal:
+            session = self._SessionLocal()
             try:
-                return self.get_lesson_sqlite(session, lesson_id)
+                return self._get_lesson_sql(session, lesson_id)
             finally:
                 session.close()
+        return None
     
     def get_all_lessons(self, skip: int = 0, limit: int = 100) -> List[dict]:
         """Get all lessons (auto-detects database)."""
         if USE_SUPABASE:
-            return self.get_all_lessons_supabase(skip, limit)
-        else:
-            session = self.SessionLocal()
+            return self._get_all_lessons_supabase(skip, limit)
+        elif self._SessionLocal:
+            session = self._SessionLocal()
             try:
-                return self.get_all_lessons_sqlite(session, skip, limit)
+                return self._get_all_lessons_sql(session, skip, limit)
             finally:
                 session.close()
+        return []
     
     def get_session(self):
-        """Get SQLite session (for SQLAlchemy dependencies)."""
-        if USE_SUPABASE:
-            return None
-        return self.SessionLocal()
+        """Get SQLAlchemy session."""
+        if self._SessionLocal:
+            return self._SessionLocal()
+        return None
 
 
 # Global database manager

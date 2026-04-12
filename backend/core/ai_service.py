@@ -1005,17 +1005,47 @@ class ContentGenerator:
 
 
 class AIService:
-    """AI service for content generation."""
+    """AI service for content generation with caching."""
     
     def __init__(self):
         self.use_mock = settings.use_mock_ai or not settings.openai_api_key
-        logger.info(f"AI Service initialized (mock={self.use_mock})")
+        self._cache = None
+        self._init_cache()
+        logger.info(f"AI Service initialized (mock={self.use_mock}, cache={bool(self._cache)})")
+    
+    def _init_cache(self):
+        """Initialize Redis cache if available."""
+        try:
+            from core.cache import cache_manager
+            self._cache = cache_manager
+        except:
+            pass
+    
+    def _get_cache_key(self, title: str, category: str) -> str:
+        """Generate cache key."""
+        return f"lesson:{title.lower().strip()}:{category}"
     
     async def generate_content(self, title: str, category: LearnerCategory) -> dict:
-        """Generate educational content."""
-        logger.info(f"Generating: {title} for {category.value}")
+        """Generate educational content with caching."""
+        category_value = category.value if hasattr(category, 'value') else category
+        cache_key = self._get_cache_key(title, category_value)
+        
+        # Try cache first
+        if self._cache:
+            cached = self._cache.get(cache_key)
+            if cached:
+                logger.info(f"Cache hit: {cache_key}")
+                return cached
+        
+        # Generate content
+        logger.info(f"Generating: {title} for {category_value}")
         content = ContentGenerator.generate(title, category)
         logger.info(f"Generated content with {len(content['standard']['intro'])} chars")
+        
+        # Cache result
+        if self._cache:
+            self._cache.set(cache_key, content, ttl=3600)
+        
         return content
     
     async def generate_improvements(self, text: str) -> list:

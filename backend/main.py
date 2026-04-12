@@ -23,8 +23,11 @@ settings = get_settings()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Lifespan context manager for startup and shutdown."""
+    db_type = "PostgreSQL" if os.getenv("DATABASE_URL") else ("Supabase" if os.getenv("SUPABASE_URL") else "SQLite")
+    cache_type = "Redis" if os.getenv("REDIS_URL") else "None"
     logger.info(f"Starting {settings.app_name}...")
-    logger.info(f"Database: {'Supabase' if db_manager._supabase else 'SQLite'}")
+    logger.info(f"Database: {db_type}")
+    logger.info(f"Cache: {cache_type}")
     yield
     logger.info("Shutting down...")
 
@@ -45,7 +48,7 @@ app.add_middleware(
         "http://localhost:3000",
         "http://localhost:5173",
         "http://localhost:8000",
-        "*",  # Allow all for development
+        "*",
     ],
     allow_credentials=True,
     allow_methods=["*"],

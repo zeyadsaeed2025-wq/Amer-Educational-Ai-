@@ -1,0 +1,14 @@
+[build.builder]
+name = "docker"
+dockerfile = "Dockerfile"
+
+[deploy]
+region = "us-east"
+numInstances = 1
+
+[deploy.healthcheck]
+path = "/health"
+port = 8000
+
+[environments.production.variables]
+ENVIRONMENT = "production"
