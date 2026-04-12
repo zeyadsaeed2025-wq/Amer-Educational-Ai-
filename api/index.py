@@ -1,46 +1,64 @@
 from http.server import BaseHTTPRequestHandler
 import json
 import uuid
+import sys
 
 class handler(BaseHTTPRequestHandler):
+    def log_message(self, format, *args):
+        pass  # Suppress logs
+    
     def do_GET(self):
-        if self.path == '/api/lessons':
-            self.send_response(200)
-            self.send_header('Content-Type', 'application/json')
-            self.end_headers()
-            self.wfile.write(json.dumps({'lessons': [], 'total': 0, 'skip': 0, 'limit': 10}).encode())
-        elif self.path == '/health':
-            self.send_response(200)
-            self.send_header('Content-Type', 'application/json')
-            self.end_headers()
-            self.wfile.write(json.dumps({'status': 'ok', 'service': 'EduForge AI', 'version': '1.0.0'}).encode())
-        else:
-            self.send_response(404)
+        try:
+            if self.path == '/api/lessons':
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({'lessons': [], 'total': 0, 'skip': 0, 'limit': 10}).encode())
+            elif self.path == '/health':
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({'status': 'ok', 'service': 'EduForge AI', 'version': '1.0.0'}).encode())
+            else:
+                self.send_response(404)
+                self.end_headers()
+        except Exception as e:
+            self.send_response(500)
             self.end_headers()
     
     def do_POST(self):
         try:
             length = int(self.headers.get('Content-Length', 0) or 0)
             body = self.rfile.read(length) if length > 0 else b''
-            data = json.loads(body) if body else {}
-        except:
+            # Try to decode body
+            try:
+                data = json.loads(body) if body else {}
+            except:
+                data = json.loads(body.decode('utf-8')) if body else {}
+        except Exception as e:
             data = {}
         
-        if self.path == '/api/generate-content':
-            self.handle_generate(data)
-        elif self.path == '/api/analyze-content':
-            self.handle_analyze(data)
-        elif self.path == '/api/suggest-improvements':
-            self.handle_suggest(data)
-        elif self.path == '/api/curriculum/generate':
-            self.handle_curriculum(data)
-        elif self.path == '/api/live-assist':
-            self.handle_live_assist(data)
-        elif self.path == '/api/smart-analyze':
-            self.handle_smart_analyze(data)
-        else:
-            self.send_response(404)
+        try:
+            if self.path == '/api/generate-content':
+                self.handle_generate(data)
+            elif self.path == '/api/analyze-content':
+                self.handle_analyze(data)
+            elif self.path == '/api/suggest-improvements':
+                self.handle_suggest(data)
+            elif self.path == '/api/curriculum/generate':
+                self.handle_curriculum(data)
+            elif self.path == '/api/live-assist':
+                self.handle_live_assist(data)
+            elif self.path == '/api/smart-analyze':
+                self.handle_smart_analyze(data)
+            else:
+                self.send_response(404)
+                self.end_headers()
+        except Exception as e:
+            self.send_response(500)
+            self.send_header('Content-Type', 'application/json')
             self.end_headers()
+            self.wfile.write(json.dumps({'detail': str(e)}).encode())
     
     def send_json(self, data, status=200):
         self.send_response(status)
