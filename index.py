@@ -1,13 +1,17 @@
-from flask import Flask, jsonify
+from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
-@app.route('/')
-def index():
-    return jsonify({'message': 'EduForge API'})
-
 @app.route('/api/test', methods=['POST'])
 def test():
-    return jsonify({'success': True})
+    # Try different ways to get data
+    data = request.get_json(silent=True) or {}
+    form = request.form or {}
+    return jsonify({
+        'success': True,
+        'json_data': data,
+        'form_data': dict(form),
+        'content_type': request.content_type
+    })
 
 app = app
