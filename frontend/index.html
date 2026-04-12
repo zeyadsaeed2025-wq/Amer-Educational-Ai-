@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>EduForge AI — منصة تعليمية ذكية شاملة</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&family=Fraunces:wght@600&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --pri:#0a6b5e;--pri-light:#e6f5f2;--pri-dark:#064d43;
+  --acc:#f59e0b;--acc-light:#fef3c7;
+  --bg:#f7f6f3;--surface:#ffffff;--surface2:#f0efeb;
+  --text:#1a1a2e;--text2:#4a4a6a;--text3:#8888aa;
+  --border:#e2e0d8;--radius:12px;--shadow:0 2px 8px rgba(0,0,0,0.08);
+  --font:'Tajawal',sans-serif;--sz:16px;
+}
+.hc{--bg:#000;--surface:#111;--surface2:#222;--text:#fff;--text2:#eee;--border:#fff;--pri:#00ff88;--pri-light:#003322;--acc:#ffcc00}
+.dark{--bg:#0d1117;--surface:#161b22;--surface2:#21262d;--text:#e6edf3;--text2:#8b949e;--border:#30363d;--pri-light:#0f2e28}
+.dsf .sidebar,.dsf .alert-badge,.dsf .assist-panel{display:none!important}
+.dsf .main-content{margin-right:0!important}
+body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:var(--sz);transition:all 0.3s;min-height:100vh}
+.dyslexia{font-family:'Comic Sans MS',cursive;letter-spacing:0.05em;line-height:2}
+.sz-lg{--sz:20px}
+.sz-xl{--sz:24px}
+
+nav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100}
+.logo{font-family:'Fraunces',serif;font-size:20px;color:var(--pri);display:flex;align-items:center;gap:8px;cursor:pointer}
+.logo span{background:var(--pri);color:#fff;border-radius:8px;padding:2px 8px;font-size:13px;font-family:var(--font);font-weight:700}
+.a11y-bar{display:flex;gap:4px;align-items:center}
+.a11y-btn{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:4px 10px;font-size:12px;cursor:pointer;color:var(--text2);font-family:var(--font);transition:all 0.2s}
+.a11y-btn:hover{background:var(--pri-light);color:var(--pri)}
+.a11y-btn.active{background:var(--pri);color:#fff;border-color:var(--pri)}
+
+.app-layout{display:flex;min-height:calc(100vh - 56px)}
+.main-content{flex:1;padding:24px;transition:margin 0.3s;max-width:100%;overflow-x:hidden}
+.sidebar{width:280px;background:var(--surface);border-right:1px solid var(--border);padding:16px;display:flex;flex-direction:column;gap:12px;height:calc(100vh - 56px);overflow-y:auto;position:sticky;top:56px}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow)}
+.card-sm{padding:12px 16px}
+
+.hero{text-align:center;padding:48px 24px;max-width:680px;margin:0 auto}
+.hero h1{font-family:'Fraunces',serif;font-size:40px;color:var(--text);line-height:1.2;margin-bottom:16px}
+.hero h1 em{color:var(--pri);font-style:normal}
+.hero p{color:var(--text2);font-size:17px;line-height:1.8;margin-bottom:32px}
+.cat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;max-width:600px;margin:0 auto 32px}
+.cat-card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:16px 12px;text-align:center;cursor:pointer;transition:all 0.2s}
+.cat-card:hover{border-color:var(--pri);background:var(--pri-light);transform:translateY(-2px)}
+.cat-card .icon{font-size:28px;margin-bottom:8px}
+.cat-card .lbl{font-size:13px;font-weight:700;color:var(--text)}
+
+.btn{display:inline-flex;align-items:center;gap:8px;padding:12px 24px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:var(--font);border:none;transition:all 0.2s}
+.btn-pri{background:var(--pri);color:#fff}
+.btn-pri:hover{background:var(--pri-dark);transform:translateY(-1px)}
+.btn-sec{background:var(--surface);color:var(--text);border:1.5px solid var(--border)}
+.btn-sec:hover{border-color:var(--pri);color:var(--pri)}
+.btn-acc{background:var(--acc);color:#1a1a2e}
+.btn-sm{padding:7px 14px;font-size:13px}
+
+.form-group{margin-bottom:16px}
+.form-label{display:block;font-size:13px;font-weight:700;color:var(--text2);margin-bottom:6px}
+.form-input{width:100%;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:12px 16px;font-size:var(--sz);font-family:var(--font);color:var(--text);outline:none;transition:border 0.2s}
+.form-input:focus{border-color:var(--pri);box-shadow:0 0 0 3px rgba(10,107,94,0.1)}
+.cat-select-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.cat-opt{border:1.5px solid var(--border);border-radius:10px;padding:10px;text-align:center;cursor:pointer;transition:all 0.2s}
+.cat-opt:hover{border-color:var(--pri)}
+.cat-opt.sel{border-color:var(--pri);background:var(--pri-light)}
+.cat-opt .ico{font-size:22px}
+.cat-opt .nm{font-size:11px;font-weight:700;color:var(--text2);margin-top:4px}
+
+.tabs{display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:20px}
+.tab{padding:10px 20px;font-size:14px;font-weight:700;cursor:pointer;color:var(--text3);border-bottom:2px solid transparent;margin-bottom:-2px;transition:all 0.2s;font-family:var(--font);background:none;border-top:none;border-left:none;border-right:none}
+.tab.active{color:var(--pri);border-bottom-color:var(--pri)}
+.tab:hover{color:var(--text)}
+
+.content-box{background:var(--surface2);border-radius:10px;padding:20px;min-height:200px;border:1px solid var(--border);line-height:2;white-space:pre-wrap;outline:none;font-family:var(--font);font-size:var(--sz);color:var(--text)}
+.content-box[contenteditable="true"]:focus{border-color:var(--pri)}
+
+.q-list{margin-top:16px}
+.q-item{display:flex;gap:10px;align-items:flex-start;padding:10px;background:var(--pri-light);border-radius:8px;margin-bottom:8px;font-size:14px}
+.q-num{background:var(--pri);color:#fff;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
+
+.sidebar-title{font-size:12px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px}
+.quality-bar-wrap{background:var(--surface2);border-radius:100px;height:10px;overflow:hidden}
+.quality-bar{height:100%;border-radius:100px;transition:width 0.5s,background 0.3s}
+.alert-item{display:flex;gap:8px;align-items:flex-start;padding:10px;border-radius:8px;font-size:13px;line-height:1.5;margin-bottom:8px}
+.alert-warn{background:#fff8e6;color:#92400e;border:1px solid #fbbf24}
+.alert-info{background:#e6f5f2;color:#065f46;border:1px solid #6ee7b7}
+.alert-danger{background:#fef2f2;color:#991b1b;border:1px solid #fca5a5}
+.suggest-item{background:var(--surface2);border-radius:8px;padding:10px;font-size:13px;color:var(--text2);margin-bottom:6px;cursor:pointer;border:1px solid var(--border);transition:all 0.2s}
+.suggest-item:hover{border-color:var(--pri);color:var(--pri)}
+
+.preview-wrap{max-width:720px;margin:0 auto}
+.preview-header{background:linear-gradient(135deg,var(--pri-dark),var(--pri));color:#fff;border-radius:var(--radius);padding:32px;margin-bottom:20px;text-align:center}
+.preview-header h2{font-size:24px;font-weight:800;margin-bottom:8px}
+.preview-body{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-bottom:16px;line-height:2;white-space:pre-wrap}
+.preview-q{background:var(--acc-light);border-radius:10px;padding:20px;margin-top:16px}
+
+.loader{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px;gap:16px}
+.spinner{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--pri);border-radius:50%;animation:spin 0.8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.progress-bar{width:200px;height:6px;background:var(--surface2);border-radius:100px;overflow:hidden}
+.progress-fill{height:100%;background:var(--pri);border-radius:100px;animation:prog 2s ease-in-out forwards}
+@keyframes prog{from{width:0}to{width:90%}}
+
+.tools-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:100px;font-size:12px;font-weight:700}
+.badge-green{background:#d1fae5;color:#065f46}
+.badge-amber{background:#fef3c7;color:#92400e}
+.badge-red{background:#fee2e2;color:#991b1b}
+
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+.skip-link{position:absolute;top:-40px;left:0;background:var(--pri);color:#fff;padding:8px;z-index:999}
+.skip-link:focus{top:0}
+.page-fade{animation:fadeIn 0.3s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.divider{height:1px;background:var(--border);margin:16px 0}
+.act-tag{display:inline-flex;align-items:center;gap:4px;background:var(--surface2);border:1px solid var(--border);border-radius:100px;padding:4px 12px;font-size:12px;font-weight:700;color:var(--text2);margin:4px}
+</style>
+</head>
+<body>
+<h2 class="sr-only">EduForge AI — منصة تعليمية ذكية شاملة</h2>
+<a class="skip-link" href="#main">تخطى إلى المحتوى</a>
+<div id="root"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script>
+// Inject environment variables
+window.ENV = {
+  API_BASE_URL: window.location.origin,
+};
+</script>
+<script>
+const {useState,useEffect,useRef,useCallback,useMemo}=React;
+
+// ── API CONFIG ────────────────────────────────────────────────────
+// Use environment variable or fallback to localhost for development
+const API_BASE = (typeof window !== 'undefined' && window.ENV && window.ENV.API_BASE_URL) 
+  ? window.ENV.API_BASE_URL 
+  : 'http://localhost:8000';
+const WS_URL = API_BASE.replace('http', 'ws') + '/ws';
+
+async function apiFetch(path, body) {
+  const res = await fetch(API_BASE + path, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+// WebSocket singleton — sends {type:'analyze', text, tab} → receives quality_update
+function useQualityWS(text, tab, enabled) {
+  const [quality, setQuality] = useState({score:0,readability:0,interactivity:0,engagement:0,alerts:[],suggestions:[]});
+  const wsRef = useRef(null);
+  const timerRef = useRef(null);
+
+  useEffect(() => {
+    const ws = new WebSocket(WS_URL);
+    wsRef.current = ws;
+    ws.onmessage = (e) => {
+      try {
+        const d = JSON.parse(e.data);
+        if (d.type === 'quality_update') setQuality(d);
+      } catch {}
+    };
+    ws.onerror = () => {}; // silent — fallback to REST
+    return () => ws.close();
+  }, []);
+
+  useEffect(() => {
+    if (!enabled || !text || text.length < 5) return;
+    clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
+      const ws = wsRef.current;
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({type:'analyze', text, tab}));
+      } else {
+        // REST fallback when WS not ready
+        apiFetch('/api/analyze-content', {text, tab})
+          .then(d => setQuality(d))
+          .catch(() => {});
+      }
+    }, 600); // debounce 600ms
+    return () => clearTimeout(timerRef.current);
+  }, [text, tab, enabled]);
+
+  return quality;
+}
+
+const CATS=[
+  {id:'standard',label:'طالب عادي',icon:'📚',color:'#0a6b5e'},
+  {id:'autism',label:'توحد',icon:'🌟',color:'#7c3aed'},
+  {id:'visual',label:'إعاقة بصرية',icon:'👁',color:'#0369a1'},
+  {id:'hearing',label:'إعاقة سمعية',icon:'🤟',color:'#b45309'},
+  {id:'dyslexia',label:'عسر القراءة',icon:'📖',color:'#be185d'},
+  {id:'adhd',label:'ADHD',icon:'⚡',color:'#15803d'},
+];
+
+function A11yBar({settings,setSettings}){
+  const toggles=[
+    {key:'dark',label:'🌙'},{key:'hc',label:'◑'},{key:'dsf',label:'🧘'},{key:'dyslexia',label:'Aa'},
+  ];
+  const sizes=[{v:'',l:'A'},{v:'sz-lg',l:'A+'},{v:'sz-xl',l:'A++'}];
+  return React.createElement('div',{className:'a11y-bar','aria-label':'أدوات إمكانية الوصول'},
+    toggles.map(t=>React.createElement('button',{key:t.key,className:'a11y-btn'+(settings[t.key]?' active':''),onClick:()=>setSettings(s=>({...s,[t.key]:!s[t.key]})),title:t.key},t.label)),
+    React.createElement('div',{style:{width:1,height:20,background:'var(--border)',margin:'0 4px'}}),
+    sizes.map(sz=>React.createElement('button',{key:sz.v,className:'a11y-btn'+(settings.size===sz.v?' active':''),onClick:()=>setSettings(s=>({...s,size:sz.v}))},sz.l)),
+    React.createElement('button',{className:'a11y-btn'+(settings.tts?' active':''),onClick:()=>setSettings(s=>({...s,tts:!s.tts})),title:'نص إلى كلام'},'🔊'),
+  );
+}
+
+function QualityMeter({score}){
+  const color=score>=70?'#10b981':score>=40?'#f59e0b':'#ef4444';
+  const label=score>=70?'ممتاز':score>=40?'يحتاج تحسين':'ضعيف';
+  const badge=score>=70?'badge-green':score>=40?'badge-amber':'badge-red';
+  return React.createElement('div',{className:'card card-sm'},
+    React.createElement('div',{className:'sidebar-title'},'مقياس الجودة'),
+    React.createElement('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8}},
+      React.createElement('span',{style:{fontSize:22,fontWeight:800,color}},(Math.round(score))+'%'),
+      React.createElement('span',{className:'badge '+badge},label),
+    ),
+    React.createElement('div',{className:'quality-bar-wrap'},
+      React.createElement('div',{className:'quality-bar',style:{width:score+'%',background:color}}),
+    ),
+    React.createElement('div',{style:{display:'flex',justifyContent:'space-between',marginTop:6,fontSize:11,color:'var(--text3)'}},
+      React.createElement('span','ضعيف'),React.createElement('span','جيد'),React.createElement('span','ممتاز'),
+    ),
+  );
+}
+
+function SmartSidebar({quality,alerts,suggestions,content,lessonId}){
+  const [aiSuggestions,setAiSuggestions]=useState([]);
+  const [aiLoading,setAiLoading]=useState(false);
+  const [aiError,setAiError]=useState(null);
+
+  async function fetchAISuggestions(){
+    if(!content||content.length<10)return;
+    setAiLoading(true);setAiError(null);
+    try{
+      const d=await apiFetch('/api/suggest-improvements',{text:content});
+      setAiSuggestions(d.suggestions||[]);
+    }catch(e){
+      setAiError('تعذّر الاتصال بالخادم');
+    }finally{setAiLoading(false);}
+  }
+
+  return React.createElement('aside',{className:'sidebar',role:'complementary','aria-label':'الشريط الذكي'},
+    React.createElement(QualityMeter,{score:quality}),
+    lessonId&&React.createElement('div',{style:{fontSize:11,color:'var(--text3)',textAlign:'center',marginTop:-4}},'# درس '+lessonId),
+    React.createElement('div',{className:'divider'}),
+    React.createElement('div',{className:'card card-sm'},
+      React.createElement('div',{className:'sidebar-title'},'🚨 تنبيهات ذكية'),
+      alerts.length===0
+        ?React.createElement('p',{style:{fontSize:13,color:'var(--text3)'}},'✅ المحتوى يبدو جيداً!')
+        :alerts.map((a,i)=>React.createElement('div',{key:i,className:'alert-item alert-'+a.type},
+            React.createElement('span',{style:{fontSize:16}},a.type==='warn'?'⚠️':a.type==='danger'?'🔴':'ℹ️'),
+            React.createElement('span',null,a.msg),
+          )),
+    ),
+    React.createElement('div',{className:'card card-sm'},
+      React.createElement('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8}},
+        React.createElement('div',{className:'sidebar-title',style:{marginBottom:0}},'💡 اقتراحات التحسين'),
+        React.createElement('button',{
+          className:'btn btn-sec btn-sm',
+          style:{padding:'3px 10px',fontSize:11},
+          onClick:fetchAISuggestions,
+          disabled:aiLoading||!content,
+          title:'اقتراحات AI',
+        },aiLoading?'⏳':'🤖 AI'),
+      ),
+      aiError&&React.createElement('p',{style:{fontSize:12,color:'var(--text3)',marginBottom:6}},aiError),
+      aiSuggestions.length>0
+        ?aiSuggestions.map((s,i)=>React.createElement('div',{key:i,className:'suggest-item',style:{borderColor:'var(--pri)',color:'var(--pri)'}},
+            '🤖 '+s,
+          ))
+        :suggestions.length===0
+          ?React.createElement('p',{style:{fontSize:13,color:'var(--text3)'}},'لا اقتراحات — اضغط 🤖 AI للحصول على اقتراحات ذكية')
+          :suggestions.map((s,i)=>React.createElement('div',{key:i,className:'suggest-item'},'→ '+s)),
+    ),
+    React.createElement('div',{className:'card card-sm'},
+      React.createElement('div',{className:'sidebar-title'},'📊 إحصاء سريع'),
+      React.createElement('div',{style:{fontSize:13,color:'var(--text2)',lineHeight:2}},
+        React.createElement('div',null,'الجودة: ',React.createElement('b',null,Math.round(quality)+'%')),
+        React.createElement('div',null,'التنبيهات: ',React.createElement('b',null,alerts.length)),
+        React.createElement('div',null,'الاقتراحات: ',React.createElement('b',null,aiSuggestions.length||suggestions.length)),
+      ),
+    ),
+  );
+}
+
+function HomePage({onStart}){
+  return React.createElement('div',{className:'page-fade'},
+    React.createElement('div',{className:'hero'},
+      React.createElement('div',{style:{display:'inline-flex',alignItems:'center',gap:8,background:'var(--pri-light)',color:'var(--pri)',borderRadius:100,padding:'4px 16px',fontSize:13,fontWeight:700,marginBottom:20}},'✨ منصة تعليمية ذكية وشاملة'),
+      React.createElement('h1',null,'إنشاء محتوى تعليمي بالذكاء الاصطناعي لـ',React.createElement('em',null,' الجميع')),
+      React.createElement('p',null,'منصة EduForge AI تُمكّنك من توليد دروس ووحدات ومناهج كاملة مُخصَّصة لكل فئة من المتعلمين — من الطلاب العاديين حتى جميع أنواع الاحتياجات الخاصة.'),
+      React.createElement('div',{className:'cat-grid'},
+        CATS.map(c=>React.createElement('div',{key:c.id,className:'cat-card',onClick:()=>onStart(c.id)},
+          React.createElement('div',{className:'icon'},c.icon),
+          React.createElement('div',{className:'lbl'},c.label),
+        )),
+      ),
+      React.createElement('button',{className:'btn btn-pri',onClick:()=>onStart('standard'),style:{fontSize:17,padding:'14px 36px'}},'🚀 ابدأ إنشاء المحتوى'),
+    ),
+    React.createElement('div',{style:{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:16,maxWidth:720,margin:'0 auto 40px',padding:'0 24px'}},
+      [{icon:'🧠',title:'ذكاء اصطناعي',desc:'توليد دروس كاملة تلقائياً'},{icon:'♿',title:'شامل للجميع',desc:'6 فئات من المتعلمين'},{icon:'⚡',title:'سريع ومرن',desc:'تعديل وتصدير فوري'}]
+        .map(f=>React.createElement('div',{key:f.title,className:'card',style:{textAlign:'center'}},
+          React.createElement('div',{style:{fontSize:32,marginBottom:8}},f.icon),
+          React.createElement('div',{style:{fontWeight:800,marginBottom:4}},f.title),
+          React.createElement('div',{style:{fontSize:13,color:'var(--text3)'}},f.desc),
+        )),
+    ),
+  );
+}
+
+function CreatePage({onGenerate,initCat}){
+  const [title,setTitle]=useState('');
+  const [cat,setCat]=useState(initCat||'standard');
+  const [loading,setLoading]=useState(false);
+  const [prog,setProg]=useState('');
+  const [error,setError]=useState(null);
+  const msgs=['جارٍ تحليل الطلب...','بناء النسخة القياسية...','تبسيط المحتوى...','تكييف لإمكانية الوصول...','اللمسات الأخيرة...'];
+
+  async function handleGen(){
+    if(!title.trim())return;
+    setError(null);
+    setLoading(true);
+    // Animate progress messages while API runs in parallel
+    let i=0;
+    const tick=setInterval(()=>{if(i<msgs.length-1){setProg(msgs[++i]);}},800);
+    setProg(msgs[0]);
+    try{
+      const data = await apiFetch('/api/generate-content',{title:title.trim(),category:cat});
+      clearInterval(tick);
+      setLoading(false);
+      onGenerate(data); // data already matches {title,category,standard,simplified,accessibility}
+    }catch(err){
+      clearInterval(tick);
+      setLoading(false);
+      setError(err.message||'فشل الاتصال بالخادم — تأكد من تشغيل Backend');
+    }
+  }
+  if(loading)return React.createElement('div',{className:'loader'},
+    React.createElement('div',{className:'spinner'}),
+    React.createElement('p',{style:{fontWeight:700,color:'var(--pri)'}},prog),
+    React.createElement('div',{className:'progress-bar'},React.createElement('div',{className:'progress-fill'})),
+    React.createElement('p',{style:{fontSize:13,color:'var(--text3)'}},'الذكاء الاصطناعي يعمل...'),
+  );
+  return React.createElement('div',{className:'page-fade',style:{maxWidth:640,margin:'0 auto'}},
+    React.createElement('h2',{style:{fontSize:24,fontWeight:800,marginBottom:4}},'✏️ إنشاء محتوى جديد'),
+    React.createElement('p',{style:{color:'var(--text2)',marginBottom:24}},'اكتب عنوان الدرس واختر الفئة المستهدفة'),
+    error&&React.createElement('div',{className:'alert-item alert-danger',style:{marginBottom:16,borderRadius:10},role:'alert'},
+      React.createElement('span',{style:{fontSize:16}},'🔴'),
+      React.createElement('div',null,
+        React.createElement('b',null,'خطأ في الاتصال: '),
+        error,
+        React.createElement('div',{style:{fontSize:12,marginTop:4,opacity:0.8}},'تأكد من تشغيل: uvicorn main:app --reload'),
+      ),
+    ),
+    React.createElement('div',{className:'card'},
+      React.createElement('div',{className:'form-group'},
+        React.createElement('label',{className:'form-label',htmlFor:'title'},'عنوان الدرس / الوحدة / المنهج'),
+        React.createElement('input',{id:'title',className:'form-input',placeholder:'مثال: الكسور في الرياضيات، البيئة والمناخ...',value:title,onChange:e=>setTitle(e.target.value),onKeyDown:e=>e.key==='Enter'&&handleGen()}),
+      ),
+      React.createElement('div',{className:'form-group'},
+        React.createElement('label',{className:'form-label'},'الفئة المستهدفة'),
+        React.createElement('div',{className:'cat-select-grid'},
+          CATS.map(c=>React.createElement('div',{key:c.id,className:'cat-opt'+(cat===c.id?' sel':''),onClick:()=>setCat(c.id)},
+            React.createElement('div',{className:'ico'},c.icon),
+            React.createElement('div',{className:'nm'},c.label),
+          )),
+        ),
+      ),
+      React.createElement('button',{className:'btn btn-pri',style:{width:'100%',justifyContent:'center',fontSize:16,padding:'14px'},onClick:handleGen,disabled:!title.trim()},'🧠 توليد المحتوى بالذكاء الاصطناعي'),
+    ),
+  );
+}
+
+function ContentDisplay({lesson,settings,onPreview}){
+  const [tab,setTab]=useState('standard');
+  const [content,setContent]=useState(null);
+  useEffect(()=>{
+    if(!lesson)return;
+    const v=lesson[tab];
+    setContent(v.intro+'\n\n'+v.body);
+  },[lesson,tab]);
+  const {score,alerts,suggestions}=useQualityWS(content,tab,!!content);
+  const hints=lesson.ui_hints||{};
+  const hintStyle={
+    fontSize:hints.font_size==='large'?'18px':hints.font_size==='xlarge'?'22px':'var(--sz)',
+    filter:hints.high_contrast?'contrast(1.5)':'none',
+  };
+  function speakText(){if(!window.speechSynthesis)return;window.speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(content);u.lang='ar-SA';u.rate=0.9;window.speechSynthesis.speak(u);}
+  function stopTTS(){window.speechSynthesis&&window.speechSynthesis.cancel()}
+  function exportPDF(){
+    const w=window.open('','_blank');
+    w.document.write(`<html dir="rtl"><head><meta charset="UTF-8"><style>body{font-family:Tahoma,sans-serif;padding:40px;line-height:2;direction:rtl}h1{color:#0a6b5e}pre{white-space:pre-wrap;font-family:Tahoma}h3{margin-top:24px}</style></head><body>`);
+    w.document.write(`<h1>${lesson.title}</h1><hr/><h2>المحتوى</h2><pre>${content}</pre>`);
+    if(lesson[tab].questions.length){w.document.write('<h3>الأسئلة التقييمية</h3><ol>');lesson[tab].questions.forEach(q=>w.document.write(`<li>${q}</li>`));w.document.write('</ol>');}
+    w.document.write('</body></html>');w.document.close();w.print();
+  }
+  const tabs=[{id:'standard',l:'📄 قياسي'},{id:'simplified',l:'🟢 مبسّط'},{id:'accessibility',l:'♿ إمكانية وصول'}];
+  return React.createElement('div',{className:'page-fade',style:{display:'flex',gap:20,alignItems:'flex-start'}},
+    React.createElement('div',{style:{flex:1,minWidth:0}},
+      React.createElement('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:16,flexWrap:'wrap',gap:8}},
+        React.createElement('div',null,
+          React.createElement('h2',{style:{fontSize:20,fontWeight:800}},lesson.title),
+          React.createElement('span',{style:{fontSize:13,color:'var(--text3)'}},CATS.find(c=>c.id===lesson.category)?.icon+' '+CATS.find(c=>c.id===lesson.category)?.label),
+        ),
+        React.createElement('div',{style:{display:'flex',gap:8}},
+          React.createElement('button',{className:'btn btn-sec btn-sm',onClick:onPreview},'👁 معاينة'),
+          React.createElement('button',{className:'btn btn-acc btn-sm',onClick:exportPDF},'📥 تصدير PDF'),
+        ),
+      ),
+      React.createElement('div',{className:'tabs',role:'tablist'},
+        tabs.map(t=>React.createElement('button',{key:t.id,className:'tab'+(tab===t.id?' active':''),role:'tab','aria-selected':tab===t.id,onClick:()=>setTab(t.id)},t.l)),
+      ),
+      React.createElement('div',{className:'tools-bar'},
+        React.createElement('button',{className:'btn btn-sec btn-sm',onClick:speakText},'🔊 استمع'),
+        React.createElement('button',{className:'btn btn-sec btn-sm',onClick:stopTTS},'⏹ إيقاف'),
+        React.createElement('button',{className:'btn btn-sec btn-sm',onClick:()=>{const sel=window.getSelection();if(sel&&sel.toString()){const u=new SpeechSynthesisUtterance(sel.toString());u.lang='ar-SA';window.speechSynthesis?.speak(u);}}},'✂️ قراءة المحدد'),
+      ),
+      React.createElement('div',{className:'content-box'+(settings.dyslexia?' dyslexia':''),style:hintStyle,contentEditable:true,suppressContentEditableWarning:true,role:'textbox','aria-multiline':true,'aria-label':'محتوى الدرس — قابل للتعديل',onInput:e=>setContent(e.currentTarget.innerText)},content),
+      lesson[tab].questions.length>0&&React.createElement('div',{className:'q-list'},
+        React.createElement('div',{style:{fontWeight:800,marginBottom:10,fontSize:14}},'❓ الأسئلة التقييمية'),
+        lesson[tab].questions.map((q,i)=>React.createElement('div',{key:i,className:'q-item'},
+          React.createElement('div',{className:'q-num'},i+1),
+          React.createElement('span',null,q),
+        )),
+      ),
+      lesson[tab].activities&&React.createElement('div',{style:{marginTop:16}},
+        React.createElement('div',{style:{fontWeight:800,marginBottom:8,fontSize:14}},'🎯 الأنشطة'),
+        lesson[tab].activities.map((a,i)=>React.createElement('span',{key:i,className:'act-tag'},a)),
+      ),
+    ),
+    React.createElement(SmartSidebar,{quality:score,alerts,suggestions,content,lessonId:lesson.id}),
+  );
+}
+
+function PreviewPage({lesson,settings,onBack}){
+  const [tab,setTab]=useState('standard');
+  const v=lesson[tab];
+  const catInfo=CATS.find(c=>c.id===lesson.category);
+  const tabs=[{id:'standard',l:'📄 قياسي'},{id:'simplified',l:'🟢 مبسّط'},{id:'accessibility',l:'♿ إمكانية وصول'}];
+  return React.createElement('div',{className:'page-fade preview-wrap'},
+    React.createElement('button',{className:'btn btn-sec btn-sm',style:{marginBottom:16},onClick:onBack},'← رجوع'),
+    React.createElement('div',{className:'preview-header'},
+      React.createElement('div',{style:{fontSize:32,marginBottom:8}},catInfo?.icon),
+      React.createElement('h2',null,lesson.title),
+      React.createElement('p',{style:{opacity:0.85,marginTop:6}},catInfo?.label+' — معاينة الطالب'),
+    ),
+    React.createElement('div',{className:'tabs',role:'tablist'},
+      tabs.map(t=>React.createElement('button',{key:t.id,className:'tab'+(tab===t.id?' active':''),onClick:()=>setTab(t.id)},t.l)),
+    ),
+    React.createElement('div',{className:'preview-body'+(settings.dyslexia?' dyslexia':'')},
+      React.createElement('div',{style:{fontSize:13,fontWeight:700,color:'var(--text3)',marginBottom:12}},'المحتوى:'),
+      v.intro+'\n\n'+v.body,
+    ),
+    v.questions.length>0&&React.createElement('div',{className:'preview-q'},
+      React.createElement('div',{style:{fontWeight:800,marginBottom:12,fontSize:15}},'❓ أسئلة الدرس'),
+      v.questions.map((q,i)=>React.createElement('div',{key:i,style:{marginBottom:12,padding:12,background:'#fff',borderRadius:8,fontSize:14}},
+        React.createElement('b',null,(i+1)+'. '),q,
+        React.createElement('textarea',{placeholder:'اكتب إجابتك هنا...',style:{display:'block',marginTop:8,width:'100%',border:'1.5px solid var(--border)',borderRadius:8,padding:'8px 12px',fontFamily:'var(--font)',fontSize:14,resize:'vertical',background:'var(--surface)',color:'var(--text)',minHeight:60}}),
+      )),
+    ),
+    v.activities&&React.createElement('div',{style:{marginTop:16}},
+      React.createElement('div',{style:{fontWeight:800,marginBottom:8}},'🎯 أنشطة الدرس'),
+      v.activities.map((a,i)=>React.createElement('span',{key:i,className:'act-tag'},a)),
+    ),
+    React.createElement('div',{style:{marginTop:24,textAlign:'center',color:'var(--text3)',fontSize:13}},'— نهاية الدرس — شكراً لك! 🎓'),
+  );
+}
+
+function App(){
+  const [page,setPage]=useState('home');
+  const [lesson,setLesson]=useState(null);
+  const [initCat,setInitCat]=useState('standard');
+  const [settings,setSettings]=useState({dark:false,hc:false,dsf:false,dyslexia:false,size:'',tts:false});
+  useEffect(()=>{
+    const cls=[];
+    if(settings.dark)cls.push('dark');
+    if(settings.hc)cls.push('hc');
+    if(settings.dsf)cls.push('dsf');
+    if(settings.dyslexia)cls.push('dyslexia');
+    if(settings.size)cls.push(settings.size);
+    document.body.className=cls.join(' ');
+  },[settings]);
+  function handleStart(cat){setInitCat(cat);setPage('create')}
+  function handleGenerate(l){setLesson(l);setPage('display')}
+  const navItems=[
+    {id:'home',l:'🏠 الرئيسية'},{id:'create',l:'✏️ إنشاء'},
+    lesson&&{id:'display',l:'📄 المحتوى'},
+    lesson&&{id:'preview',l:'👁 معاينة'},
+  ].filter(Boolean);
+  return React.createElement('div',null,
+    React.createElement('nav',null,
+      React.createElement('div',{className:'logo',onClick:()=>setPage('home')},'⚡ EduForge',React.createElement('span',null,'AI')),
+      React.createElement('div',{style:{display:'flex',gap:4}},
+        navItems.map(n=>React.createElement('button',{key:n.id,className:'a11y-btn'+(page===n.id?' active':''),onClick:()=>setPage(n.id)},n.l)),
+      ),
+      React.createElement(A11yBar,{settings,setSettings}),
+    ),
+    React.createElement('div',{className:'app-layout',id:'main'},
+      React.createElement('div',{className:'main-content'},
+        page==='home'&&React.createElement(HomePage,{onStart:handleStart}),
+        page==='create'&&React.createElement(CreatePage,{onGenerate:handleGenerate,initCat}),
+        page==='display'&&lesson&&React.createElement(ContentDisplay,{lesson,settings,onPreview:()=>setPage('preview')}),
+        page==='preview'&&lesson&&React.createElement(PreviewPage,{lesson,settings,onBack:()=>setPage('display')}),
+      ),
+    ),
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));
+</script>
+</body>
+</html>

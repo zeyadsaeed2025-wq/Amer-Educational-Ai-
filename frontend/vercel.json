@@ -1,0 +1,6 @@
+{
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "https://YOUR-BACKEND-URL/api/$1" },
+    { "source": "/ws", "destination": "https://YOUR-BACKEND-URL/ws" }
+  ]
+}

@@ -1,0 +1,15 @@
+# Core dependencies
+fastapi>=0.100.0
+uvicorn[standard]>=0.23.0
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+python-dotenv>=1.0.0
+
+# Database
+sqlalchemy>=2.0.0
+
+# Optional: Supabase
+# supabase>=2.0.0
+
+# Optional: OpenAI
+# openai>=1.0.0
