@@ -2,9 +2,6 @@
 name = "eduforge"
 version = "1.0.0"
 requires-python = ">=3.12"
-
-[tool.vercel]
-framework = null
-
-[tool.vercel.app]
-root = "."
+dependencies = [
+    "flask>=3.0.0"
+]
