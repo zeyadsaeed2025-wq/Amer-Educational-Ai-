@@ -1,8 +1,22 @@
 {
-  "experimentalServices": {
-    "backend": {
-      "entrypoint": "backend",
-      "routePrefix": "/"
+  "builds": [
+    {
+      "src": "backend/main.py",
+      "use": "@vercel/python"
     }
-  }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "backend/main.py"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "backend/index.html"
+    },
+    {
+      "src": "/",
+      "dest": "backend/index.html"
+    }
+  ]
 }
