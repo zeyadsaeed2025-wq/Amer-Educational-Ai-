@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>EduForge AI - منصة توليد المحتوى التعليمي</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Tajawal',sans-serif;background:#f7f6f3;color:#1a1a2e;min-height:100vh}
+.header{background:#0a6b5e;color:#fff;padding:16px 24px;text-align:center}
+.header h1{font-size:24px}
+.container{max-width:640px;margin:24px auto;padding:0 16px}
+.card{background:#fff;border-radius:12px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,0.08);margin-bottom:16px}
+.btn{background:#0a6b5e;color:#fff;padding:12px 24px;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;border:none;width:100%}
+.btn:hover{background:#064d43}
+.input{width:100%;padding:12px 16px;border:1.5px solid #e2e0d8;border-radius:10px;font-size:16px;font-family:'Tajawal',sans-serif;margin-bottom:16px}
+.label{font-size:14px;font-weight:700;color:#4a4a6a;margin-bottom:8px;display:block}
+.result{background:#fff;padding:20px;border-radius:12px;white-space:pre-wrap;line-height:1.8}
+.error{background:#fef2f2;color:#991b1b;padding:12px;border-radius:8px;margin-bottom:16px}
+.loading{text-align:center;padding:40px}
+.spinner{width:40px;height:40px;border:3px solid #e2e0d8;border-top-color:#0a6b5e;border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>EduForge AI - منصة توليد المحتوى التعليمي</h1>
+</div>
+
+<div class="container" id="app">
+  <div class="card">
+    <label class="label">عنوان الدرس:</label>
+    <input type="text" class="input" id="titleInput" placeholder="مثال: الرياضيات"/>
+    <button class="btn" onclick="generateLesson()">إنشاء الدرس</button>
+  </div>
+  
+  <div id="result"></div>
+</div>
+
+<script>
+const API_BASE = '';
+
+async function generateLesson() {
+  const title = document.getElementById('titleInput').value.trim();
+  if (!title) {
+    document.getElementById('result').innerHTML = '<div class="error">الرجاء إدخال عنوان الدرس</div>';
+    return;
+  }
+  
+  document.getElementById('result').innerHTML = '<div class="loading"><div class="spinner"></div><p>جاري إنشاء الدرس...</p></div>';
+  
+  try {
+    const url = API_BASE + '/api/generate-content?title=' + encodeURIComponent(title) + '&category=standard';
+    const res = await fetch(url);
+    
+    if (!res.ok) {
+      throw new Error('HTTP ' + res.status);
+    }
+    
+    const data = await res.json();
+    
+    let html = '<div class="card">';
+    html += '<h2 style="color:#0a6b5e;margin-bottom:16px">' + data.title + '</h2>';
+    
+    if (data.standard) {
+      html += '<div class="result">' + data.standard.body + '</div>';
+      
+      if (data.standard.questions && data.standard.questions.length > 0) {
+        html += '<h3 style="margin-top:20px">أسئلة المراجعة:</h3><ol>';
+        data.standard.questions.forEach(q => {
+          html += '<li>' + q + '</li>';
+        });
+        html += '</ol>';
+      }
+      
+      if (data.standard.activities && data.standard.activities.length > 0) {
+        html += '<h3 style="margin-top:20px">الأنشطة:</h3><ul>';
+        data.standard.activities.forEach(a => {
+          html += '<li>' + a + '</li>';
+        });
+        html += '</ul>';
+      }
+    }
+    
+    html += '</div>';
+    document.getElementById('result').innerHTML = html;
+    
+  } catch (e) {
+    document.getElementById('result').innerHTML = '<div class="error">خطأ: ' + e.message + '</div>';
+  }
+}
+
+// Enter key to submit
+document.getElementById('titleInput').addEventListener('keypress', function(e) {
+  if (e.key === 'Enter') {
+    generateLesson();
+  }
+});
+</script>
+</body>
+</html>
