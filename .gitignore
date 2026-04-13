@@ -1,77 +1,35 @@
-# Python
+# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
-*.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
 
-# Virtual Environment
+# Virtual environments
 venv/
 env/
+ENV/
+.venv
+
+# Environment variables
 .env
+.env.local
 
 # IDE
 .vscode/
 .idea/
 *.swp
 *.swo
-*~
 
-# Database
-*.db
-*.sqlite
-*.sqlite3
-
-# Logs
-*.log
-logs/
-
-# Environment variables
-.env
-.env.local
-.env.*.local
+# Node
+node_modules/
+dist/
+build/
 
 # OS
 .DS_Store
 Thumbs.db
 
-# Backend specific
-backend/__pycache__/
-backend/*/__pycache__/
-backend/*/*/__pycache__/
-*.pyc
-*.pyo
+# Logs
+*.log
 
-# Frontend
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.next/
-out/
-build/
-
-# Vercel
-.vercel
-
-# Misc
-*.bak
-*.tmp
-.cache/
-
-.vercel
+# Supabase
+.supabase/

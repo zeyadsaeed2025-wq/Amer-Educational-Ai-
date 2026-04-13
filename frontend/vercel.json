@@ -1,7 +1,6 @@
 {
-  "rewrites": [
-    {"source": "/api/(.*)", "destination": "https://eduforge-ai-swart.vercel.app/api/$1"},
-    {"source": "/health", "destination": "https://eduforge-ai-swart.vercel.app/health"},
-    {"source": "/ws", "destination": "https://eduforge-ai-swart.vercel.app/ws"}
-  ]
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "framework": "vite",
+  "installCommand": "npm install"
 }
