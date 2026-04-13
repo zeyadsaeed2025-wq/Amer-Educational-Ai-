@@ -1,27 +1,30 @@
 from flask import Flask, jsonify, request
 import json
-import os
 
 app = Flask(__name__)
 
-def get_json_data():
-    """Get JSON from request body"""
+def parse_body():
+    """Parse request body for JSON data"""
+    content_type = request.content_type or ''
+    
+    # Try different methods to get body
+    body = request.get_data()
+    
+    if not body:
+        return {}
+    
+    # Try to parse as JSON
     try:
-        data = request.get_json(force=True)
-        if data:
-            return data
+        return json.loads(body)
     except:
         pass
     
-    # Fallback: try to read raw data
+    # Try with different encoding
     try:
-        raw = request.get_data()
-        if raw:
-            return json.loads(raw)
+        return json.loads(body.decode('utf-8'))
     except:
         pass
     
-    # Last resort: return empty dict
     return {}
 
 @app.route('/api/lessons', methods=['GET'])
@@ -30,8 +33,8 @@ def lessons():
 
 @app.route('/api/generate-content', methods=['POST'])
 def generate():
-    data = get_json_data()
-    title = data.get('title', 'درس جديد')
+    data = parse_body()
+    title = data.get('title', 'درس تعليمي')
     category = data.get('category', 'standard')
     
     return jsonify({
@@ -39,7 +42,7 @@ def generate():
         'title': title,
         'category': category,
         'standard': {
-            'intro': f'مرحباً بك في درس: {title}\n\nهذا الدرس مصمم لطلاب الفئة العادية.',
+            'intro': f'مرحباً بك في درس: {title}',
             'body': f'''# درس: {title}
 
 ## المقدمة
@@ -48,7 +51,6 @@ def generate():
 ## الأهداف
 - فهم المفاهيم الأساسية
 - تطبيق المهارات
-- تطوير التفكير
 
 ## المحتوى
 شرح تفصيلي للموضوع.
@@ -77,7 +79,7 @@ def generate():
 
 @app.route('/api/analyze-content', methods=['POST'])
 def analyze():
-    data = get_json_data()
+    data = parse_body()
     text = data.get('text', '')
     score = min(100, max(50, len(text) // 20))
     
@@ -86,40 +88,36 @@ def analyze():
         'readability': min(100, max(40, len(text) // 30)),
         'interactivity': 70,
         'engagement': score - 10,
-        'alerts': [{'type': 'warn', 'msg': 'قصير'}] if len(text) < 100 else [],
+        'alerts': [],
         'suggestions': []
     })
 
 @app.route('/api/suggest-improvements', methods=['POST'])
 def suggest():
-    return jsonify({'suggestions': ['حسن العناوين', 'أضف أمثلة'], 'improvements': []})
+    return jsonify({'suggestions': [], 'improvements': []})
 
 @app.route('/api/curriculum/generate', methods=['POST'])
 def curriculum():
-    data = get_json_data()
+    data = parse_body()
     title = data.get('title', 'منهج')
-    units = data.get('num_units', 3)
-    lessons = data.get('lessons_per_unit', 4)
     
     import uuid
-    course_units = [{'unit_title': f'الوحدة {i+1}', 'lessons': [{'title': f'الدرس {j+1}'} for j in range(lessons)], 'assessment': 'اختبار'} for i in range(units)]
-    
     return jsonify({
         'course_id': str(uuid.uuid4())[:8],
         'course_title': title,
         'category': data.get('category', 'standard'),
-        'objectives': ['فهم المفاهيم'],
-        'units': course_units,
-        'total_lessons': units * lessons,
-        'estimated_hours': (units * lessons * 30) // 60
+        'objectives': [],
+        'units': [],
+        'total_lessons': 0,
+        'estimated_hours': 0
     })
 
 @app.route('/api/live-assist', methods=['POST'])
 def live():
-    return jsonify({'suggestions': ['أضف مثال'], 'improved_text': '', 'improvements': []})
+    return jsonify({'suggestions': [], 'improved_text': '', 'improvements': []})
 
 @app.route('/api/smart-analyze', methods=['POST'])
 def smart():
-    return jsonify({'score': 75, 'engagement_level': 'medium', 'complexity_level': 'medium', 'alerts': [], 'suggestions': [], 'readability_score': 70, 'interactivity_score': 65})
+    return jsonify({'score': 75})
 
 app = app
