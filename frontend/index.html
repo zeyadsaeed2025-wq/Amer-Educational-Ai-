@@ -149,20 +149,31 @@ const WS_URL = window.location.protocol === 'https:'
   ? 'wss://' + window.location.host + '/ws' 
   : 'ws://localhost:8000/ws';
 
-// Error handling with retry
+// Error handling with retry - use GET with query params for Vercel compatibility
 async function apiFetch(path, body, options = {}) {
   const { retries = 2, timeout = 30000 } = options;
   let lastError;
+  
+  // Build query string from body
+  const queryParams = new URLSearchParams();
+  if (body && typeof body === 'object') {
+    Object.entries(body).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        queryParams.append(key, String(value));
+      }
+    });
+  }
+  
+  const queryString = queryParams.toString();
+  const url = queryString ? API_BASE + path + '?' + queryString : API_BASE + path;
   
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), timeout);
       
-      const res = await fetch(API_BASE + path, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(body),
+      const res = await fetch(url, {
+        method: 'GET',
         signal: controller.signal,
       });
       clearTimeout(timeoutId);
